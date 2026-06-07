@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#ff8fb1">
+<title>Lucy's Toca World 🏡</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  :root { --pink:#ff8fb1; --pink2:#ff6f9c; --yellow:#ffd966; --blue:#6fc4ff;
+    --green:#8ad97a; --purple:#c69bff; --ink:#3a2e4d; }
+  html, body { margin:0; height:100%; overflow:hidden;
+    font-family:"Comic Sans MS","Baloo 2","Segoe UI",system-ui,sans-serif;
+    background:#ffeaf2; color:var(--ink);
+    touch-action:manipulation; user-select:none; -webkit-user-select:none; }
+  #app { display:flex; flex-direction:column; height:100%; }
+
+  header { display:flex; align-items:center; gap:8px; padding:7px 10px;
+    background:linear-gradient(90deg,var(--pink),var(--purple)); color:#fff;
+    box-shadow:0 2px 6px rgba(0,0,0,.15); z-index:5; }
+  header h1 { font-size:18px; margin:0; flex:1; white-space:nowrap;
+    overflow:hidden; text-overflow:ellipsis; text-shadow:0 1px 2px rgba(0,0,0,.2); }
+  .hbtn { border:none; border-radius:14px; padding:7px 10px; font-size:15px;
+    background:rgba(255,255,255,.25); color:#fff; font-weight:bold; cursor:pointer; font-family:inherit; }
+  .hbtn:active { transform:scale(.93); }
+
+  #floors { display:flex; gap:6px; padding:6px 8px; overflow-x:auto;
+    background:#fff5fa; border-bottom:2px solid #ffd6e6; }
+  .floor-btn { flex:0 0 auto; border:none; border-radius:14px; padding:7px 11px;
+    font-size:14px; font-weight:bold; background:#ffe1ec; color:var(--ink);
+    cursor:pointer; font-family:inherit; white-space:nowrap; }
+  .floor-btn.active { background:var(--pink2); color:#fff; transform:scale(1.04); }
+
+  #rooms { display:flex; gap:6px; padding:6px 8px; overflow-x:auto;
+    background:#fff; border-bottom:2px solid #f0e6ff; }
+  .room-tab { flex:0 0 auto; border:none; border-radius:12px; padding:6px 12px;
+    font-size:13px; font-weight:bold; background:#f1ecff; color:var(--ink);
+    cursor:pointer; font-family:inherit; white-space:nowrap; }
+  .room-tab.active { background:var(--purple); color:#fff; }
+  .room-tab.add { background:var(--green); color:#fff; }
+
+  #stage-wrap { flex:1; position:relative; overflow:hidden; }
+  #stage { position:absolute; inset:0; overflow:hidden; transition:background .25s; }
+  #wall { position:absolute; left:0; right:0; top:0; height:62%; }
+  #floorEl { position:absolute; left:0; right:0; bottom:0; height:38%;
+    box-shadow:inset 0 4px 8px rgba(0,0,0,.08); }
+  #baseboard { position:absolute; left:0; right:0; bottom:38%; height:10px;
+    background:rgba(0,0,0,.07); }
+
+  .thing { position:absolute; transform:translate(-50%,-50%);
+    cursor:grab; touch-action:none; will-change:left,top;
+    display:flex; flex-direction:column; align-items:center;
+    filter:drop-shadow(0 4px 3px rgba(0,0,0,.18)); transition:transform .08s; }
+  .art { display:flex; align-items:center; justify-content:center; }
+  .art svg { width:100%; height:100%; display:block; overflow:visible; }
+  .thing.lift { transform:translate(-50%,-54%) scale(1.18) rotate(-3deg);
+    filter:drop-shadow(0 10px 8px rgba(0,0,0,.3)); z-index:30; }
+  .thing.selected { outline:3px dashed var(--pink2); outline-offset:4px; border-radius:14px; }
+  .bubble { background:#fff; border:2px solid var(--ink); border-radius:12px;
+    padding:3px 8px; font-size:13px; max-width:130px; margin-bottom:4px;
+    position:relative; color:var(--ink); text-align:center; }
+  .bubble::after { content:""; position:absolute; bottom:-8px; left:50%;
+    transform:translateX(-50%); border:6px solid transparent; border-top-color:#fff; }
+
+  .scene { position:absolute; inset:0; pointer-events:none; }
+
+  #actionbar { position:absolute; top:8px; left:50%; transform:translateX(-50%);
+    display:none; gap:6px; background:rgba(255,255,255,.96); border:2px solid var(--pink);
+    border-radius:16px; padding:6px 8px; box-shadow:0 4px 12px rgba(0,0,0,.2);
+    z-index:40; flex-wrap:wrap; justify-content:center; max-width:94%; }
+  #actionbar.show { display:flex; }
+  .abtn { border:none; border-radius:12px; padding:7px 10px; font-size:14px;
+    font-weight:bold; background:#ffe1ec; color:var(--ink); cursor:pointer; font-family:inherit; }
+  .abtn.del { background:#ff8a8a; color:#fff; }
+  .abtn:active { transform:scale(.92); }
+
+  #drawer { background:#fff; border-top:3px solid var(--pink); box-shadow:0 -3px 10px rgba(0,0,0,.1); }
+  #cats { display:flex; gap:5px; padding:6px 8px 0; overflow-x:auto; }
+  .cat { flex:0 0 auto; border:none; border-radius:12px 12px 0 0; padding:6px 11px;
+    font-size:13px; font-weight:bold; background:#f3f3f7; color:var(--ink);
+    cursor:pointer; font-family:inherit; white-space:nowrap; }
+  .cat.active { background:var(--yellow); }
+  #items { display:flex; gap:8px; padding:8px; overflow-x:auto; background:#fffceb;
+    min-height:70px; align-items:center; }
+  .item { flex:0 0 auto; cursor:pointer; background:#fff; border-radius:14px; padding:5px;
+    box-shadow:0 2px 4px rgba(0,0,0,.12); }
+  .item .art { width:48px; height:48px; }
+  .item:active { transform:scale(.88); }
+  .item.add-person { font-size:14px; font-weight:bold; color:#fff;
+    background:var(--purple); padding:14px 12px; }
+
+  #overlay { position:fixed; inset:0; background:rgba(0,0,0,.35);
+    display:none; align-items:flex-end; justify-content:center; z-index:50; }
+  #overlay.show { display:flex; }
+  .sheet { background:#fff; width:100%; max-width:540px; border-radius:22px 22px 0 0;
+    padding:16px; box-shadow:0 -4px 20px rgba(0,0,0,.3); max-height:86%; overflow-y:auto; }
+  .sheet h2 { margin:2px 0 12px; font-size:19px; }
+  .row { margin-bottom:14px; }
+  .row label { display:block; font-size:14px; font-weight:bold; margin-bottom:6px; }
+  .swatches { display:flex; flex-wrap:wrap; gap:8px; }
+  .sw { width:36px; height:36px; border-radius:50%; border:3px solid #fff;
+    box-shadow:0 0 0 2px #ddd; cursor:pointer; }
+  .sw.sel { box-shadow:0 0 0 3px var(--ink); }
+  .opts { display:flex; flex-wrap:wrap; gap:6px; }
+  .opt { border:2px solid #eee; background:#faf7ff; border-radius:12px; padding:7px 10px;
+    font-size:13px; font-weight:bold; cursor:pointer; font-family:inherit; color:var(--ink); }
+  .opt.sel { border-color:var(--purple); background:#efe4ff; }
+  .sheet input[type=text] { width:100%; padding:10px; font-size:16px; border:2px solid #ddd;
+    border-radius:12px; font-family:inherit; }
+  .sheet .big { width:100%; border:none; border-radius:14px; padding:12px; font-size:16px;
+    font-weight:bold; background:var(--pink2); color:#fff; cursor:pointer; font-family:inherit; margin-top:6px; }
+  .sheet .ghost { background:#eee; color:var(--ink); }
+  .placegrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(96px,1fr));
+    gap:10px; margin-bottom:10px; }
+  .placecard { border:2px solid #eee; border-radius:16px; padding:12px 6px; text-align:center;
+    cursor:pointer; font-weight:bold; font-size:13px; background:#fff; }
+  .placecard:active { transform:scale(.94); }
+  .placecard .ic { font-size:30px; display:block; margin-bottom:4px; }
+  .placecard.active { border-color:var(--pink2); background:#fff0f6; }
+  .hint { font-size:12px; color:#998; text-align:center; padding:2px 0 0; }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1 id="houseTitle">🏡</h1>
+    <button class="hbtn" id="btnHouses">🗺️ Places</button>
+    <button class="hbtn" id="btnEdit">🎨 Design</button>
+  </header>
+  <div id="floors"></div>
+  <div id="rooms"></div>
+  <div id="stage-wrap">
+    <div id="stage">
+      <div id="wall"></div>
+      <div id="baseboard"></div>
+      <div id="floorEl"></div>
+      <div id="scene" class="scene"></div>
+    </div>
+    <div id="actionbar"></div>
+  </div>
+  <div id="drawer">
+    <div id="cats"></div>
+    <div id="items"></div>
+  </div>
+</div>
+<div id="overlay"><div class="sheet" id="sheet"></div></div>
+
+<script>
+//////////////////// PALETTES ////////////////////
+const SKINS  = ['#ffe0bd','#f1c27d','#e0ac69','#c68642','#8d5524','#ffd9c0'];
+const HAIRS  = ['#3a2e2e','#6b3f1d','#caa14a','#e8b04b','#d94f4f','#7a4fd9','#ff7fb6','#7ac6ff','#9aa0a6','#222'];
+const CLOTHES= ['#ff6f9c','#6fc4ff','#8ad97a','#ffd966','#c69bff','#ff8a5b','#ff5a5a','#5ad1c4','#ffffff','#444'];
+const PAINTS = ['#fbe6ef','#e7f0ff','#e9ffe7','#fff6da','#f1e7ff','#ffe7e0','#d9f7ff','#ffffff','#ffd6e6','#cdeccd','#f7d9ff','#cfe3ff','#2a3340','#3a2e4d'];
+const FLOORS_C = PAINTS.concat(['#d9b38c','#caa66a','#6fc4ff','#8ad97a','#bdbdbd','#7a5230']);
+const HAIRSTYLES = ['short','long','ponytail','bun','pigtails','curly','spiky','bald'];
+const HATS = ['none','party','crown','cap','bow','beanie'];
+const GLASSES = ['none','round','sun'];
+const OUTFITS = ['shirt','dress'];
+
+//////////////////// FLAT-ART ICON LIBRARY ////////////////////
+// every icon is an SVG string, viewBox 0 0 100 100, flat "Toca" style.
+function critter(body, dark, back, face){
+  return `<svg viewBox="0 0 100 100"><ellipse cx="50" cy="89" rx="24" ry="4" fill="rgba(0,0,0,.08)"/>${back||''}`
+    + `<ellipse cx="50" cy="66" rx="26" ry="22" fill="${body}"/>`
+    + `<ellipse cx="50" cy="72" rx="15" ry="13" fill="${dark}"/>`
+    + `<circle cx="50" cy="42" r="20" fill="${body}"/>${face||''}</svg>`;
+}
+const eyes = `<circle cx="43" cy="41" r="2.6" fill="#33272f"/><circle cx="57" cy="41" r="2.6" fill="#33272f"/>`;
+
+const ICONS = {
+  _box:`<svg viewBox="0 0 100 100"><rect x="26" y="40" width="48" height="44" rx="10" fill="#cdbfe0"/></svg>`,
+
+  sofa:`<svg viewBox="0 0 100 100"><rect x="12" y="44" width="76" height="30" rx="13" fill="#ff9eb6"/><rect x="8" y="56" width="84" height="26" rx="13" fill="#ff7fa0"/><rect x="20" y="50" width="26" height="20" rx="8" fill="#ffc2d2"/><rect x="54" y="50" width="26" height="20" rx="8" fill="#ffc2d2"/><rect x="6" y="54" width="14" height="30" rx="7" fill="#ff7fa0"/><rect x="80" y="54" width="14" height="30" rx="7" fill="#ff7fa0"/><rect x="14" y="82" width="8" height="9" rx="2" fill="#7a5230"/><rect x="78" y="82" width="8" height="9" rx="2" fill="#7a5230"/></svg>`,
+  armchair:`<svg viewBox="0 0 100 100"><rect x="26" y="40" width="48" height="30" rx="12" fill="#9ad0e0"/><rect x="22" y="54" width="56" height="26" rx="12" fill="#7ec0d4"/><rect x="34" y="48" width="32" height="20" rx="8" fill="#c2e8f0"/><rect x="20" y="52" width="12" height="28" rx="6" fill="#7ec0d4"/><rect x="68" y="52" width="12" height="28" rx="6" fill="#7ec0d4"/><rect x="26" y="80" width="7" height="9" rx="2" fill="#7a5230"/><rect x="67" y="80" width="7" height="9" rx="2" fill="#7a5230"/></svg>`,
+  chair:`<svg viewBox="0 0 100 100"><rect x="36" y="22" width="30" height="38" rx="6" fill="#e0a96a"/><rect x="40" y="26" width="22" height="30" rx="4" fill="#caa06a"/><rect x="34" y="54" width="36" height="12" rx="4" fill="#e0a96a"/><rect x="36" y="64" width="7" height="26" rx="2" fill="#b6823f"/><rect x="61" y="64" width="7" height="26" rx="2" fill="#b6823f"/></svg>`,
+  table:`<svg viewBox="0 0 100 100"><rect x="16" y="44" width="68" height="12" rx="6" fill="#e0a96a"/><rect x="22" y="56" width="8" height="34" rx="3" fill="#b6823f"/><rect x="70" y="56" width="8" height="34" rx="3" fill="#b6823f"/></svg>`,
+  bed:`<svg viewBox="0 0 100 100"><rect x="10" y="40" width="20" height="42" rx="6" fill="#c9a2e0"/><rect x="14" y="60" width="76" height="22" rx="8" fill="#fff"/><rect x="14" y="56" width="76" height="12" rx="6" fill="#ffd1e0"/><rect x="20" y="48" width="22" height="16" rx="6" fill="#fff"/><rect x="14" y="80" width="8" height="9" rx="2" fill="#7a5230"/><rect x="82" y="80" width="8" height="9" rx="2" fill="#7a5230"/></svg>`,
+  crib:`<svg viewBox="0 0 100 100"><rect x="26" y="46" width="48" height="20" rx="4" fill="#ffd1e0"/><g stroke="#ffb3c6" stroke-width="3"><line x1="30" y1="40" x2="30" y2="66"/><line x1="40" y1="40" x2="40" y2="66"/><line x1="50" y1="40" x2="50" y2="66"/><line x1="60" y1="40" x2="60" y2="66"/><line x1="70" y1="40" x2="70" y2="66"/></g><rect x="26" y="38" width="48" height="5" rx="2" fill="#ff9eb6"/><rect x="28" y="66" width="6" height="18" fill="#ffb3c6"/><rect x="66" y="66" width="6" height="18" fill="#ffb3c6"/></svg>`,
+  lamp:`<svg viewBox="0 0 100 100"><path d="M34 24 L66 24 L60 44 L40 44 Z" fill="#ffd966"/><rect x="47" y="44" width="6" height="40" fill="#9aa0a6"/><rect x="36" y="84" width="28" height="6" rx="3" fill="#9aa0a6"/></svg>`,
+  tv:`<svg viewBox="0 0 100 100"><rect x="16" y="28" width="68" height="44" rx="6" fill="#3a3a44"/><rect x="22" y="34" width="56" height="32" rx="3" fill="#8fd0ff"/><path d="M28 60 L42 46 L52 56 L60 50 L70 60 Z" fill="#bfe9d0"/><circle cx="62" cy="42" r="4" fill="#ffe08a"/><rect x="44" y="72" width="12" height="7" fill="#3a3a44"/><rect x="34" y="79" width="32" height="6" rx="3" fill="#3a3a44"/></svg>`,
+  shelf:`<svg viewBox="0 0 100 100"><rect x="24" y="24" width="52" height="66" rx="4" fill="#c98a52"/><rect x="28" y="30" width="44" height="24" fill="#e8c79a"/><rect x="28" y="58" width="44" height="24" fill="#e8c79a"/><rect x="31" y="32" width="6" height="20" fill="#ff7fa0"/><rect x="39" y="32" width="6" height="20" fill="#7ac6ff"/><rect x="47" y="32" width="6" height="20" fill="#8ad97a"/><rect x="55" y="32" width="6" height="20" fill="#ffd966"/><rect x="33" y="60" width="6" height="20" fill="#c69bff"/><rect x="41" y="60" width="6" height="20" fill="#ff9e6b"/><rect x="49" y="60" width="6" height="20" fill="#7ac6ff"/></svg>`,
+  books:`<svg viewBox="0 0 100 100"><rect x="30" y="40" width="12" height="44" rx="2" fill="#ff7fa0"/><rect x="44" y="36" width="12" height="48" rx="2" fill="#7ac6ff"/><rect x="58" y="44" width="12" height="40" rx="2" fill="#8ad97a"/></svg>`,
+  rug:`<svg viewBox="0 0 100 100"><ellipse cx="50" cy="64" rx="38" ry="16" fill="#ffb3c6"/><ellipse cx="50" cy="64" rx="28" ry="11" fill="#ff8fb1"/><ellipse cx="50" cy="64" rx="16" ry="6" fill="#fff0f5"/></svg>`,
+  plant:`<svg viewBox="0 0 100 100"><path d="M50 58 C30 52 28 24 44 20 C46 36 50 42 50 58" fill="#6fbf73"/><path d="M50 58 C70 52 72 24 56 20 C54 36 50 42 50 58" fill="#8ad97a"/><path d="M50 60 C49 42 50 30 50 22" stroke="#4a9a4f" stroke-width="3" fill="none"/><path d="M36 58 L64 58 L60 84 L40 84 Z" fill="#e08a5a"/><rect x="36" y="56" width="28" height="6" rx="2" fill="#c97a4a"/></svg>`,
+  window:`<svg viewBox="0 0 100 100"><rect x="24" y="22" width="52" height="56" rx="6" fill="#8fd0ff"/><rect x="24" y="22" width="52" height="56" rx="6" fill="none" stroke="#fff" stroke-width="6"/><line x1="50" y1="24" x2="50" y2="76" stroke="#fff" stroke-width="5"/><line x1="26" y1="50" x2="74" y2="50" stroke="#fff" stroke-width="5"/></svg>`,
+  door:`<svg viewBox="0 0 100 100"><rect x="30" y="20" width="40" height="70" rx="6" fill="#c98a52"/><rect x="35" y="26" width="30" height="58" rx="4" fill="#b6823f"/><circle cx="60" cy="56" r="3" fill="#ffd966"/></svg>`,
+  fridge:`<svg viewBox="0 0 100 100"><rect x="30" y="18" width="40" height="72" rx="8" fill="#eef3f6"/><line x1="30" y1="46" x2="70" y2="46" stroke="#c9d2d8" stroke-width="3"/><rect x="62" y="26" width="4" height="14" rx="2" fill="#9aa6ad"/><rect x="62" y="52" width="4" height="14" rx="2" fill="#9aa6ad"/></svg>`,
+  stove:`<svg viewBox="0 0 100 100"><rect x="26" y="34" width="48" height="56" rx="6" fill="#dfe6ea"/><rect x="26" y="34" width="48" height="16" rx="6" fill="#bcc6cc"/><circle cx="38" cy="42" r="4" fill="#6b7780"/><circle cx="50" cy="42" r="4" fill="#6b7780"/><circle cx="62" cy="42" r="4" fill="#6b7780"/><rect x="32" y="58" width="36" height="26" rx="4" fill="#9aa6ad"/><circle cx="50" cy="71" r="9" fill="#cfd8dd"/></svg>`,
+  bathtub:`<svg viewBox="0 0 100 100"><rect x="18" y="50" width="64" height="26" rx="13" fill="#fff"/><rect x="22" y="50" width="56" height="12" rx="6" fill="#bfe6ff"/><circle cx="30" cy="46" r="3" fill="#dff4ff"/><circle cx="40" cy="44" r="4" fill="#dff4ff"/><circle cx="78" cy="44" r="4" fill="#9aa6ad"/><rect x="74" y="40" width="4" height="12" fill="#9aa6ad"/><rect x="22" y="76" width="6" height="8" fill="#cfd8dd"/><rect x="72" y="76" width="6" height="8" fill="#cfd8dd"/></svg>`,
+  toilet:`<svg viewBox="0 0 100 100"><rect x="38" y="30" width="24" height="26" rx="5" fill="#eef3f6"/><ellipse cx="46" cy="64" rx="20" ry="14" fill="#fff"/><ellipse cx="46" cy="64" rx="12" ry="8" fill="#cfe7f5"/><rect x="40" y="74" width="20" height="14" rx="3" fill="#eef3f6"/></svg>`,
+  sink:`<svg viewBox="0 0 100 100"><rect x="30" y="44" width="40" height="14" rx="6" fill="#eef3f6"/><ellipse cx="50" cy="52" rx="14" ry="5" fill="#cfe7f5"/><rect x="48" y="30" width="4" height="16" fill="#9aa6ad"/><rect x="44" y="28" width="12" height="5" rx="2" fill="#9aa6ad"/><rect x="40" y="58" width="6" height="28" fill="#cfd8dd"/><rect x="54" y="58" width="6" height="28" fill="#cfd8dd"/></svg>`,
+  mirror:`<svg viewBox="0 0 100 100"><ellipse cx="50" cy="50" rx="22" ry="30" fill="#cfeaff"/><ellipse cx="50" cy="50" rx="22" ry="30" fill="none" stroke="#e0a96a" stroke-width="6"/><path d="M40 36 Q44 44 42 58" stroke="#fff" stroke-width="4" fill="none" opacity=".7"/></svg>`,
+  clock:`<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="28" fill="#fff"/><circle cx="50" cy="50" r="28" fill="none" stroke="#ff9eb6" stroke-width="6"/><line x1="50" y1="50" x2="50" y2="34" stroke="#3a2e4d" stroke-width="4" stroke-linecap="round"/><line x1="50" y1="50" x2="62" y2="56" stroke="#3a2e4d" stroke-width="4" stroke-linecap="round"/></svg>`,
+  picture:`<svg viewBox="0 0 100 100"><rect x="26" y="26" width="48" height="44" rx="4" fill="#ffd966"/><rect x="31" y="31" width="38" height="34" rx="2" fill="#bfe6ff"/><circle cx="60" cy="40" r="4" fill="#ffe08a"/><path d="M33 62 L46 48 L56 60 L62 54 L67 63 Z" fill="#8ad97a"/></svg>`,
+  wardrobe:`<svg viewBox="0 0 100 100"><rect x="28" y="22" width="44" height="64" rx="5" fill="#e0a96a"/><line x1="50" y1="24" x2="50" y2="84" stroke="#b6823f" stroke-width="2"/><circle cx="45" cy="54" r="2.5" fill="#7a5230"/><circle cx="55" cy="54" r="2.5" fill="#7a5230"/></svg>`,
+  candle:`<svg viewBox="0 0 100 100"><path d="M50 24 C54 30 54 34 50 36 C46 34 46 30 50 24" fill="#ffb648"/><rect x="42" y="40" width="16" height="40" rx="4" fill="#fff0d6"/><rect x="38" y="78" width="24" height="8" rx="3" fill="#cdb48a"/></svg>`,
+
+  cake:`<svg viewBox="0 0 100 100"><rect x="28" y="50" width="44" height="30" rx="5" fill="#ffd1e0"/><path d="M28 56 Q39 66 50 56 T72 56 V52 H28 Z" fill="#fff"/><rect x="28" y="50" width="44" height="8" fill="#ff9eb6"/><rect x="48" y="34" width="4" height="14" fill="#ffd966"/><circle cx="50" cy="32" r="3" fill="#ff7a3c"/><circle cx="40" cy="48" r="3" fill="#ff5a5a"/><circle cx="60" cy="48" r="3" fill="#ff5a5a"/></svg>`,
+  cupcake:`<svg viewBox="0 0 100 100"><path d="M34 56 L66 56 L62 84 L38 84 Z" fill="#e8a06a"/><path d="M30 56 Q34 38 50 38 Q66 38 70 56 Z" fill="#ffb3d0"/><circle cx="50" cy="38" r="4" fill="#ff5a5a"/></svg>`,
+  apple:`<svg viewBox="0 0 100 100"><path d="M50 38 C40 30 26 36 28 52 C30 70 44 82 50 82 C56 82 70 70 72 52 C74 36 60 30 50 38" fill="#ff5a5a"/><rect x="48" y="28" width="4" height="12" rx="2" fill="#7a5230"/><path d="M52 30 Q62 26 64 34 Q56 36 52 32" fill="#6fbf73"/></svg>`,
+  pizza:`<svg viewBox="0 0 100 100"><path d="M50 24 L80 78 Q50 90 20 78 Z" fill="#ffd066"/><path d="M50 30 L75 76 Q50 86 25 76 Z" fill="#ff9e6b"/><circle cx="44" cy="58" r="5" fill="#d33b3b"/><circle cx="58" cy="64" r="5" fill="#d33b3b"/><circle cx="50" cy="44" r="4" fill="#d33b3b"/></svg>`,
+  icecream:`<svg viewBox="0 0 100 100"><path d="M38 50 L62 50 L50 86 Z" fill="#e8b06a"/><circle cx="40" cy="44" r="13" fill="#ffb3d0"/><circle cx="60" cy="44" r="13" fill="#bfe6ff"/><circle cx="50" cy="34" r="13" fill="#fff0a8"/><circle cx="50" cy="24" r="3" fill="#ff5a5a"/></svg>`,
+  donut:`<svg viewBox="0 0 100 100"><circle cx="50" cy="54" r="26" fill="#e8a06a"/><path d="M24 54 A26 26 0 0 1 76 54 A26 26 0 0 1 50 62 Z" fill="#ff8fb1"/><circle cx="50" cy="54" r="10" fill="#fff"/><circle cx="40" cy="44" r="2" fill="#ffd966"/><circle cx="58" cy="42" r="2" fill="#7ac6ff"/><circle cx="64" cy="54" r="2" fill="#8ad97a"/><circle cx="38" cy="58" r="2" fill="#c69bff"/></svg>`,
+  cookie:`<svg viewBox="0 0 100 100"><circle cx="50" cy="54" r="26" fill="#d9a05a"/><circle cx="42" cy="46" r="4" fill="#5a3a1a"/><circle cx="58" cy="50" r="4" fill="#5a3a1a"/><circle cx="50" cy="64" r="4" fill="#5a3a1a"/><circle cx="60" cy="40" r="3" fill="#5a3a1a"/></svg>`,
+  juice:`<svg viewBox="0 0 100 100"><path d="M36 38 L64 38 L60 86 L40 86 Z" fill="#bfe6ff" opacity=".5"/><path d="M37 52 L63 52 L60 86 L40 86 Z" fill="#ff8a3c"/><rect x="55" y="24" width="5" height="44" rx="2" fill="#ff5a8a" transform="rotate(12 57 46)"/></svg>`,
+  coffee:`<svg viewBox="0 0 100 100"><rect x="30" y="44" width="36" height="30" rx="6" fill="#fff"/><path d="M31 50 H65 V60 Q48 70 31 60 Z" fill="#7a4a2a"/><path d="M66 50 q14 2 0 18" stroke="#cfd8dd" stroke-width="5" fill="none"/><path d="M40 30 q4 6 0 12 M50 30 q4 6 0 12" stroke="#ccc" stroke-width="3" fill="none" opacity=".6"/></svg>`,
+  burger:`<svg viewBox="0 0 100 100"><path d="M26 44 Q50 24 74 44 Z" fill="#e8a85a"/><rect x="26" y="44" width="48" height="7" fill="#8ad97a"/><rect x="26" y="51" width="48" height="8" rx="2" fill="#a05a2a"/><rect x="26" y="59" width="48" height="6" fill="#ffd066"/><path d="M26 65 Q50 80 74 65 L74 64 H26 Z" fill="#e8a85a"/><circle cx="38" cy="38" r="1.5" fill="#fff"/><circle cx="50" cy="34" r="1.5" fill="#fff"/><circle cx="62" cy="38" r="1.5" fill="#fff"/></svg>`,
+
+  dog:critter('#d8a45e','#e8bd86','<ellipse cx="33" cy="40" rx="7" ry="13" fill="#b6823f"/><ellipse cx="67" cy="40" rx="7" ry="13" fill="#b6823f"/>', eyes+'<ellipse cx="50" cy="50" rx="5" ry="4" fill="#3a2e2e"/>'),
+  cat:critter('#b9b3c9','#cfcad9','<path d="M34 26 L41 42 L28 40 Z" fill="#b9b3c9"/><path d="M66 26 L59 42 L72 40 Z" fill="#b9b3c9"/>', eyes+'<path d="M50 49 l-3 3 h6 Z" fill="#e88aa8"/><line x1="40" y1="52" x2="28" y2="50" stroke="#9a93ad" stroke-width="1.5"/><line x1="60" y1="52" x2="72" y2="50" stroke="#9a93ad" stroke-width="1.5"/>'),
+  rabbit:critter('#f3e3ee','#fff3fa','<ellipse cx="42" cy="20" rx="5" ry="16" fill="#f3e3ee"/><ellipse cx="58" cy="20" rx="5" ry="16" fill="#f3e3ee"/><ellipse cx="42" cy="22" rx="2.5" ry="11" fill="#ffc2d2"/><ellipse cx="58" cy="22" rx="2.5" ry="11" fill="#ffc2d2"/>', eyes+'<ellipse cx="50" cy="49" rx="3" ry="2" fill="#e88aa8"/>'),
+  pig:critter('#f4a6c0','#ffc2d6','<path d="M36 30 L45 40 L33 42 Z" fill="#e88aa8"/><path d="M64 30 L55 40 L67 42 Z" fill="#e88aa8"/>', eyes+'<ellipse cx="50" cy="50" rx="9" ry="7" fill="#e88aa8"/><circle cx="47" cy="50" r="2" fill="#c96a88"/><circle cx="53" cy="50" r="2" fill="#c96a88"/>'),
+  fishbowl:`<svg viewBox="0 0 100 100"><path d="M28 48 a22 22 0 1 0 44 0 Z" fill="#bfe6ff" opacity=".75"/><rect x="40" y="30" width="20" height="8" rx="3" fill="#9ad0e0"/><path d="M44 60 q6 -7 12 0 q-2 5 -8 5 q-6 0 -4 -5" fill="#ff8a3c"/><path d="M56 60 l9 -4 l0 8 Z" fill="#ff8a3c"/><circle cx="49" cy="59" r="1.5" fill="#222"/></svg>`,
+  bird:`<svg viewBox="0 0 100 100"><ellipse cx="50" cy="58" rx="20" ry="18" fill="#7ac6ff"/><ellipse cx="40" cy="60" rx="9" ry="12" fill="#5aa6e0"/><circle cx="52" cy="38" r="14" fill="#7ac6ff"/><path d="M64 38 L76 42 L64 46 Z" fill="#ffae42"/><circle cx="55" cy="36" r="2.6" fill="#222"/></svg>`,
+  hamster:`<svg viewBox="0 0 100 100"><ellipse cx="50" cy="64" rx="22" ry="20" fill="#e8c79a"/><circle cx="40" cy="50" r="5" fill="#d9b07a"/><circle cx="60" cy="50" r="5" fill="#d9b07a"/><ellipse cx="50" cy="68" rx="14" ry="12" fill="#fff4e0"/><circle cx="44" cy="60" r="2.5" fill="#222"/><circle cx="56" cy="60" r="2.5" fill="#222"/><ellipse cx="50" cy="66" rx="3" ry="2" fill="#e88aa8"/></svg>`,
+  cow:`<svg viewBox="0 0 100 100"><ellipse cx="50" cy="89" rx="24" ry="4" fill="rgba(0,0,0,.08)"/><ellipse cx="50" cy="66" rx="26" ry="22" fill="#fff" stroke="#e6e6e6" stroke-width="1.5"/><circle cx="50" cy="42" r="20" fill="#fff" stroke="#e6e6e6" stroke-width="1.5"/><ellipse cx="34" cy="30" rx="5" ry="3" fill="#3a3a44"/><ellipse cx="66" cy="30" rx="5" ry="3" fill="#3a3a44"/><circle cx="43" cy="40" r="2.6" fill="#222"/><circle cx="57" cy="40" r="2.6" fill="#222"/><ellipse cx="50" cy="50" rx="9" ry="6" fill="#f4a6c0"/><ellipse cx="60" cy="70" rx="8" ry="6" fill="#3a3a44"/><ellipse cx="39" cy="60" rx="6" ry="5" fill="#3a3a44"/></svg>`,
+  chicken:`<svg viewBox="0 0 100 100"><ellipse cx="50" cy="88" rx="18" ry="3" fill="rgba(0,0,0,.08)"/><ellipse cx="50" cy="62" rx="20" ry="22" fill="#fff" stroke="#eee" stroke-width="1.5"/><circle cx="50" cy="40" r="14" fill="#fff" stroke="#eee" stroke-width="1.5"/><path d="M44 28 q3 -7 6 0 q3 -7 6 0 q-6 -1 -12 0" fill="#ff5a5a"/><path d="M62 42 L73 44 L62 48 Z" fill="#ffae42"/><circle cx="55" cy="40" r="2.5" fill="#222"/><path d="M44 50 q-5 4 0 7" fill="#ff5a5a"/></svg>`,
+  horse:`<svg viewBox="0 0 100 100"><ellipse cx="50" cy="88" rx="22" ry="4" fill="rgba(0,0,0,.08)"/><ellipse cx="46" cy="68" rx="24" ry="20" fill="#c98a52"/><path d="M58 52 Q70 32 72 22 Q82 34 76 54 Z" fill="#c98a52"/><path d="M60 30 Q67 27 71 25 Q66 40 61 50" fill="#7a4a2a"/><circle cx="71" cy="38" r="2.6" fill="#222"/><ellipse cx="75" cy="50" rx="4" ry="3" fill="#a86a3a"/></svg>`,
+
+  tree:`<svg viewBox="0 0 100 100"><rect x="44" y="56" width="12" height="32" rx="3" fill="#9a6b3f"/><circle cx="50" cy="40" r="24" fill="#6fbf73"/><circle cx="34" cy="48" r="16" fill="#7fcf82"/><circle cx="66" cy="48" r="16" fill="#7fcf82"/><circle cx="44" cy="34" r="6" fill="#9adf9d" opacity=".6"/></svg>`,
+  palm:`<svg viewBox="0 0 100 100"><path d="M48 44 Q54 70 52 88 L60 88 Q58 66 56 44 Z" fill="#b07a3f"/><path d="M52 40 Q30 30 18 38 Q34 36 52 46" fill="#5fae63"/><path d="M52 40 Q74 30 86 38 Q66 36 52 46" fill="#6fbf73"/><path d="M52 38 Q44 18 30 16 Q46 24 52 44" fill="#5fae63"/><path d="M52 38 Q60 18 74 16 Q58 24 52 44" fill="#6fbf73"/><circle cx="48" cy="42" r="3" fill="#a86a3a"/><circle cx="55" cy="44" r="3" fill="#a86a3a"/></svg>`,
+  flower:`<svg viewBox="0 0 100 100"><rect x="48" y="50" width="4" height="36" fill="#5fae63"/><path d="M44 62 Q34 60 40 70 Q46 70 48 64" fill="#6fbf73"/><circle cx="50" cy="28" r="7" fill="#ff8fb1"/><circle cx="62" cy="36" r="7" fill="#ff8fb1"/><circle cx="58" cy="50" r="7" fill="#ff8fb1"/><circle cx="42" cy="50" r="7" fill="#ff8fb1"/><circle cx="38" cy="36" r="7" fill="#ff8fb1"/><circle cx="50" cy="40" r="7" fill="#ffd34d"/></svg>`,
+  bush:`<svg viewBox="0 0 100 100"><circle cx="36" cy="62" r="16" fill="#6fbf73"/><circle cx="58" cy="60" r="18" fill="#7fcf82"/><circle cx="48" cy="52" r="15" fill="#83d488"/></svg>`,
+  sun:`<svg viewBox="0 0 100 100"><g stroke="#ffcf3a" stroke-width="5" stroke-linecap="round"><line x1="50" y1="14" x2="50" y2="26"/><line x1="50" y1="74" x2="50" y2="86"/><line x1="14" y1="50" x2="26" y2="50"/><line x1="74" y1="50" x2="86" y2="50"/><line x1="24" y1="24" x2="33" y2="33"/><line x1="67" y1="67" x2="76" y2="76"/><line x1="76" y1="24" x2="67" y2="33"/><line x1="33" y1="67" x2="24" y2="76"/></g><circle cx="50" cy="50" r="18" fill="#ffd966"/></svg>`,
+  rock:`<svg viewBox="0 0 100 100"><path d="M24 78 Q26 56 44 54 Q58 48 70 58 Q82 64 78 78 Z" fill="#a7adb5"/><path d="M24 78 Q26 56 44 54 Q52 60 44 78 Z" fill="#bcc2c9"/></svg>`,
+
+  teddy:`<svg viewBox="0 0 100 100"><circle cx="34" cy="34" r="8" fill="#c98a52"/><circle cx="66" cy="34" r="8" fill="#c98a52"/><circle cx="50" cy="44" r="18" fill="#d8a45e"/><ellipse cx="50" cy="74" rx="20" ry="16" fill="#d8a45e"/><circle cx="44" cy="42" r="2.5" fill="#3a2e2e"/><circle cx="56" cy="42" r="2.5" fill="#3a2e2e"/><ellipse cx="50" cy="48" rx="5" ry="4" fill="#b6823f"/><circle cx="32" cy="72" r="7" fill="#c98a52"/><circle cx="68" cy="72" r="7" fill="#c98a52"/></svg>`,
+  ball:`<svg viewBox="0 0 100 100"><circle cx="50" cy="56" r="26" fill="#fff"/><circle cx="50" cy="56" r="26" fill="none" stroke="#ddd" stroke-width="2"/><path d="M50 32 L64 44 L58 62 L42 62 L36 44 Z" fill="#3a3a44"/></svg>`,
+  balloon:`<svg viewBox="0 0 100 100"><ellipse cx="50" cy="42" rx="20" ry="24" fill="#ff5a8a"/><path d="M46 64 L54 64 L50 70 Z" fill="#ff5a8a"/><path d="M50 70 Q56 82 48 90" stroke="#999" stroke-width="1.5" fill="none"/><ellipse cx="43" cy="34" rx="5" ry="7" fill="#ff9ebf" opacity=".7"/></svg>`,
+  blocks:`<svg viewBox="0 0 100 100"><rect x="28" y="58" width="24" height="24" rx="4" fill="#ff7fa0"/><rect x="54" y="58" width="24" height="24" rx="4" fill="#7ac6ff"/><rect x="40" y="34" width="24" height="24" rx="4" fill="#ffd34d"/><circle cx="52" cy="46" r="5" fill="#fff"/></svg>`,
+  toycar:`<svg viewBox="0 0 100 100"><rect x="22" y="52" width="56" height="18" rx="9" fill="#ff5a5a"/><path d="M36 52 Q42 40 56 40 L66 52 Z" fill="#ff7a7a"/><rect x="44" y="44" width="14" height="9" rx="2" fill="#bfe6ff"/><circle cx="36" cy="72" r="8" fill="#3a3a44"/><circle cx="64" cy="72" r="8" fill="#3a3a44"/><circle cx="36" cy="72" r="3" fill="#cfd8dd"/><circle cx="64" cy="72" r="3" fill="#cfd8dd"/></svg>`,
+  slide:`<svg viewBox="0 0 100 100"><path d="M30 28 L30 82" stroke="#ff8fb1" stroke-width="5"/><path d="M30 30 Q34 60 72 82" stroke="#ffd34d" stroke-width="10" fill="none" stroke-linecap="round"/><g stroke="#7ac6ff" stroke-width="4"><line x1="22" y1="44" x2="38" y2="44"/><line x1="22" y1="56" x2="36" y2="56"/><line x1="24" y1="68" x2="34" y2="68"/></g><line x1="25" y1="28" x2="35" y2="28" stroke="#ff8fb1" stroke-width="5"/></svg>`,
+  swing:`<svg viewBox="0 0 100 100"><path d="M24 80 L40 26 L60 26 L76 80" stroke="#9a6b3f" stroke-width="5" fill="none"/><line x1="40" y1="26" x2="60" y2="26" stroke="#9a6b3f" stroke-width="5"/><line x1="44" y1="28" x2="44" y2="64" stroke="#888" stroke-width="2"/><line x1="56" y1="28" x2="56" y2="64" stroke="#888" stroke-width="2"/><rect x="40" y="64" width="20" height="6" rx="2" fill="#ff7fa0"/></svg>`,
+  kite:`<svg viewBox="0 0 100 100"><path d="M50 22 L70 46 L50 70 L30 46 Z" fill="#ff7fa0"/><path d="M50 22 L50 70 M30 46 L70 46" stroke="#fff" stroke-width="2"/><path d="M50 70 q6 8 -2 14 q8 2 2 10" stroke="#7ac6ff" stroke-width="2" fill="none"/></svg>`,
+
+  poolring:`<svg viewBox="0 0 100 100"><circle cx="50" cy="56" r="26" fill="#ff5a5a"/><path d="M50 30 A26 26 0 0 1 76 56 L64 56 A14 14 0 0 0 50 42 Z" fill="#fff"/><path d="M50 82 A26 26 0 0 1 24 56 L36 56 A14 14 0 0 0 50 70 Z" fill="#fff"/><circle cx="50" cy="56" r="12" fill="#bfe6ff"/></svg>`,
+  beachball:`<svg viewBox="0 0 100 100"><circle cx="50" cy="54" r="26" fill="#fff"/><path d="M50 28 A26 26 0 0 1 71 41 L50 54 Z" fill="#ff5a5a"/><path d="M71 41 A26 26 0 0 1 71 67 L50 54 Z" fill="#ffd34d"/><path d="M71 67 A26 26 0 0 1 39 78 L50 54 Z" fill="#7ac6ff"/><path d="M39 78 A26 26 0 0 1 29 41 L50 54 Z" fill="#8ad97a"/></svg>`,
+  umbrella:`<svg viewBox="0 0 100 100"><line x1="50" y1="36" x2="50" y2="86" stroke="#9a6b3f" stroke-width="4"/><path d="M16 40 Q50 10 84 40 Z" fill="#ff5a5a"/><path d="M16 40 Q33 28 50 36 L50 40 Z" fill="#fff"/><path d="M50 36 Q67 28 84 40 L50 40 Z" fill="#fff"/></svg>`,
+  surfboard:`<svg viewBox="0 0 100 100"><g transform="rotate(28 50 52)"><ellipse cx="50" cy="52" rx="13" ry="36" fill="#ffd34d"/><line x1="50" y1="20" x2="50" y2="84" stroke="#ff7a3c" stroke-width="3"/></g></svg>`,
+  bucket:`<svg viewBox="0 0 100 100"><path d="M34 50 L66 50 L60 84 L40 84 Z" fill="#ff7fa0"/><path d="M36 46 Q50 30 64 46" stroke="#ff9ebf" stroke-width="3" fill="none"/><ellipse cx="50" cy="50" rx="16" ry="5" fill="#ff9ebf"/><rect x="60" y="40" width="16" height="7" rx="3" fill="#ffd34d" transform="rotate(20 68 43)"/></svg>`,
+  starfish:`<svg viewBox="0 0 100 100"><path d="M50 24 L60 48 L86 50 L64 64 L72 88 L50 74 L28 88 L36 64 L14 50 L40 48 Z" fill="#ffae42"/><circle cx="50" cy="56" r="3" fill="#e88a2a"/><circle cx="42" cy="52" r="2" fill="#e88a2a"/><circle cx="58" cy="52" r="2" fill="#e88a2a"/></svg>`,
+
+  ghost:`<svg viewBox="0 0 100 100"><path d="M30 58 Q30 26 50 26 Q70 26 70 58 L70 82 L62 74 L54 82 L46 74 L38 82 L30 74 Z" fill="#fff"/><circle cx="43" cy="48" r="4" fill="#3a2e4d"/><circle cx="57" cy="48" r="4" fill="#3a2e4d"/><ellipse cx="50" cy="58" rx="4" ry="5" fill="#3a2e4d"/></svg>`,
+  pumpkin:`<svg viewBox="0 0 100 100"><rect x="47" y="28" width="6" height="12" fill="#6b7a3f"/><ellipse cx="50" cy="58" rx="28" ry="24" fill="#ff8a3c"/><ellipse cx="38" cy="58" rx="12" ry="24" fill="#ff7a2c"/><ellipse cx="62" cy="58" rx="12" ry="24" fill="#ff7a2c"/><path d="M40 52 L46 58 L34 58 Z" fill="#5a2e0a"/><path d="M60 52 L66 58 L54 58 Z" fill="#5a2e0a"/><path d="M38 68 Q50 78 62 68 L56 68 L52 72 L48 68 L44 72 Z" fill="#5a2e0a"/></svg>`,
+  tombstone:`<svg viewBox="0 0 100 100"><path d="M32 86 L32 50 Q32 30 50 30 Q68 30 68 50 L68 86 Z" fill="#b7bdc4"/><rect x="40" y="48" width="20" height="5" fill="#8a9098"/><rect x="47" y="44" width="6" height="18" fill="#8a9098"/><rect x="24" y="84" width="52" height="6" rx="2" fill="#6fbf73"/></svg>`,
+
+  register:`<svg viewBox="0 0 100 100"><rect x="28" y="50" width="44" height="30" rx="4" fill="#9ad0e0"/><rect x="34" y="34" width="26" height="18" rx="3" fill="#7ec0d4"/><rect x="37" y="37" width="20" height="9" fill="#dffaff"/><circle cx="38" cy="62" r="3" fill="#fff"/><circle cx="48" cy="62" r="3" fill="#fff"/><circle cx="58" cy="62" r="3" fill="#fff"/><rect x="60" y="38" width="10" height="6" rx="2" fill="#ff8fb1"/></svg>`,
+  shoppingbag:`<svg viewBox="0 0 100 100"><path d="M32 44 L68 44 L72 84 L28 84 Z" fill="#ff8fb1"/><path d="M40 44 Q40 28 50 28 Q60 28 60 44" stroke="#ff5a8a" stroke-width="4" fill="none"/><circle cx="50" cy="60" r="6" fill="#fff"/></svg>`,
+  easel:`<svg viewBox="0 0 100 100"><path d="M30 84 L42 34 M70 84 L58 34 M50 34 L50 84" stroke="#b6823f" stroke-width="4"/><rect x="34" y="36" width="32" height="26" fill="#fff" stroke="#cdb48a" stroke-width="2"/><path d="M38 56 L46 46 L52 54 L58 48 L62 58 Z" fill="#8ad97a"/><circle cx="58" cy="44" r="3" fill="#ffd34d"/></svg>`,
+  salonchair:`<svg viewBox="0 0 100 100"><rect x="34" y="34" width="32" height="24" rx="8" fill="#ff9eb6"/><rect x="30" y="52" width="40" height="16" rx="8" fill="#ff7fa0"/><rect x="44" y="68" width="12" height="14" fill="#9aa6ad"/><rect x="36" y="80" width="28" height="6" rx="3" fill="#6b7780"/><rect x="28" y="52" width="8" height="16" rx="4" fill="#ff7fa0"/><rect x="64" y="52" width="8" height="16" rx="4" fill="#ff7fa0"/></svg>`,
+  pill:`<svg viewBox="0 0 100 100"><g transform="rotate(-22 50 51)"><rect x="30" y="42" width="40" height="18" rx="9" fill="#ff5a5a"/><rect x="30" y="42" width="20" height="18" rx="9" fill="#ffd34d"/><line x1="50" y1="42" x2="50" y2="60" stroke="#fff" stroke-width="2"/></g></svg>`,
+  hay:`<svg viewBox="0 0 100 100"><ellipse cx="50" cy="58" rx="30" ry="26" fill="#e8c469"/><ellipse cx="50" cy="58" rx="22" ry="26" fill="#d9b34a"/><line x1="30" y1="44" x2="34" y2="74" stroke="#c79a36" stroke-width="2"/><line x1="50" y1="34" x2="50" y2="82" stroke="#c79a36" stroke-width="2"/><line x1="70" y1="44" x2="66" y2="74" stroke="#c79a36" stroke-width="2"/></svg>`,
+  fence:`<svg viewBox="0 0 100 100"><g fill="#f0e6d2" stroke="#cdb48a" stroke-width="1.5"><path d="M22 44 h10 v40 h-10 Z"/><path d="M46 44 h10 v40 h-10 Z"/><path d="M70 44 h10 v40 h-10 Z"/><rect x="18" y="54" width="66" height="7"/><rect x="18" y="68" width="66" height="7"/></g></svg>`,
+  tractor:`<svg viewBox="0 0 100 100"><rect x="34" y="44" width="30" height="20" rx="4" fill="#5fae63"/><rect x="40" y="34" width="18" height="14" rx="3" fill="#7fcf82"/><rect x="42" y="36" width="14" height="9" fill="#bfe6ff"/><rect x="60" y="50" width="10" height="6" fill="#4a9a4f"/><circle cx="40" cy="74" r="10" fill="#3a3a44"/><circle cx="40" cy="74" r="4" fill="#9aa6ad"/><circle cx="70" cy="72" r="14" fill="#3a3a44"/><circle cx="70" cy="72" r="6" fill="#9aa6ad"/></svg>`,
+};
+function iconSvg(key){ return ICONS[key] || ICONS._box; }
+
+//////////////////// DRAWER CATEGORIES ////////////////////
+const CATS = {
+  '🛋️ Furniture': ['sofa','armchair','chair','table','bed','crib','lamp','tv','shelf','books','rug','plant','window','door','fridge','stove','bathtub','toilet','sink','mirror','clock','picture','wardrobe','candle'],
+  '🍰 Food':       ['cake','cupcake','apple','pizza','icecream','donut','cookie','juice','coffee','burger'],
+  '🐶 Animals':    ['dog','cat','rabbit','fishbowl','bird','hamster','cow','pig','chicken','horse'],
+  '🌳 Nature':     ['tree','palm','flower','bush','sun','rock','hay','fence'],
+  '🧸 Toys':       ['teddy','ball','balloon','blocks','toycar','slide','swing','kite'],
+  '🏖️ Beach':      ['poolring','beachball','umbrella','surfboard','bucket','starfish'],
+  '✨ More':       ['register','shoppingbag','easel','salonchair','pill','ghost','pumpkin','tombstone','tractor'],
+};
+
+//////////////////// BUILDING TEMPLATES ////////////////////
+// room: [name, wall, floor, scene|null, [iconKeys...]]
+const BUILDINGS = {
+  house:{ icon:'🏡', label:'House', floors:[
+    ['1 · Living','🛋️',[ ['Living Room','#fbe6ef','#d9b38c',null,['sofa','tv','plant','picture']], ['Family Room','#e7f0ff','#c9a06a',null,['armchair','clock','window','lamp']] ]],
+    ['2 · Kitchen','🍳',[ ['Kitchen','#fff6da','#e6d3a3',null,['fridge','stove','apple','shelf']], ['Dining Room','#ffe7e0','#d9b38c',null,['table','chair','chair','cake']] ]],
+    ['3 · Bedrooms','🛏️',[ ["Lucy's Room",'#ffd6e6','#e7c9a0',null,['bed','teddy','picture','lamp']], ['Guest Room','#e9ffe7','#d9b38c',null,['bed','window','wardrobe']] ]],
+    ['4 · Bathrooms','🛁',[ ['Big Bathroom','#d9f7ff','#cfe3ff',null,['bathtub','toilet','mirror']], ['Little Bathroom','#e7f0ff','#cfe3ff',null,['toilet','sink','mirror']] ]],
+    ['5 · Playroom','🧸',[ ['Playroom','#f1e7ff','#e7c9a0',null,['teddy','blocks','toycar','ball']], ['Art Studio','#fff6da','#d9b38c',null,['easel','picture','shelf']] ]],
+    ['6 · Rooftop','🏐',[ ['Volleyball Court','#bfe3ff','#f0d79a','volley',['ball','umbrella']], ['Sky Lounge','#cdeccd','#caa66a',null,['armchair','plant','coffee']] ]],
+    ['🌳 Backyard','🌳',[ ['Pool & Waterslide','#bfeaff','#6fc4ff','pool',['poolring','bird']], ['Garden','#d9f2ff','#8ad97a',null,['tree','flower','bush','flower']] ]],
+  ]},
+  salon:{ icon:'💇', label:'Hair Salon', floors:[
+    ['💇 Salon','💇',[ ['Hair Salon','#ffe7f3','#e7c9a0',null,['salonchair','mirror','salonchair','plant']], ['Nail Spa','#fff0fa','#f0d0e6',null,['armchair','candle','flower']] ]],
+    ['💆 Spa','💆',[ ['Relax Spa','#e7fff6','#cfe3ff',null,['bathtub','candle','plant']] ]],
+  ]},
+  hospital:{ icon:'🏥', label:'Hospital', floors:[
+    ['🏥 Clinic','🏥',[ ['Waiting Room','#eaf4ff','#cfe3ff',null,['chair','chair','plant','clock']], ['Doctor Room','#f0fff6','#dfeede',null,['bed','pill','sink']] ]],
+    ['🚑 Emergency','🚑',[ ['Emergency','#fff0f0','#e6d3d3',null,['bed','pill','clock']] ]],
+  ]},
+  school:{ icon:'🏫', label:'School', floors:[
+    ['🏫 School','🏫',[ ['Classroom','#fff6da','#e6d3a3',null,['chair','books','easel','shelf']], ['Library','#f0e9ff','#d9b38c',null,['shelf','books','chair']] ]],
+    ['🏀 Gym','🏀',[ ['Gym','#eaf4ff','#f0d79a',null,['ball','ball']], ['Cafeteria','#fff0e7','#e6d3a3',null,['pizza','juice','chair','table']] ]],
+  ]},
+  mall:{ icon:'🛍️', label:'Shopping Mall', floors:[
+    ['🛍️ Shops','🛍️',[ ['Clothes Shop','#ffeef6','#e7d6ef',null,['shoppingbag','mirror','wardrobe']], ['Toy Store','#eef6ff','#d9c9a0',null,['teddy','toycar','blocks','register']] ]],
+    ['🍔 Food Court','🍔',[ ['Food Court','#fff6e7','#e6d3a3',null,['burger','juice','chair','table']] ]],
+  ]},
+  cafe:{ icon:'☕', label:'Café', floors:[
+    ['☕ Café','☕',[ ['Café','#fff3e0','#d9b38c',null,['coffee','cake','cupcake','chair']], ['Kitchen','#fff8ec','#e6d3a3',null,['stove','fridge','shelf']] ]],
+  ]},
+  petshop:{ icon:'🐾', label:'Pet Shop', floors:[
+    ['🐾 Pets','🐾',[ ['Pet Store','#eafff0','#e6d3a3',null,['dog','cat','rabbit','fishbowl']], ['Grooming','#e7f6ff','#cfe3ff',null,['bathtub','dog','hamster']] ]],
+  ]},
+  park:{ icon:'🛝', label:'Park', floors:[
+    ['🛝 Park','🛝',[ ['Playground','#cdeefc','#8ad97a',null,['slide','swing','ball','tree']], ['Picnic','#d9f2ff','#8ad97a',null,['tree','flower','bush']] ]],
+  ]},
+  beach:{ icon:'🏖️', label:'Beach', floors:[
+    ['🏖️ Beach','🏖️',[ ['Sandy Beach','#bfe9ff','#f3e0a8','pool',['umbrella','beachball','surfboard','bucket']], ['Snack Bar','#d9f2ff','#e6d3a3',null,['icecream','juice','palm']] ]],
+  ]},
+  icecream:{ icon:'🍦', label:'Ice Cream Shop', floors:[
+    ['🍦 Shop','🍦',[ ['Ice Cream Shop','#fff0fa','#ffe0ef',null,['icecream','cupcake','chair','register']] ]],
+  ]},
+  bakery:{ icon:'🥐', label:'Bakery', floors:[
+    ['🥐 Bakery','🥐',[ ['Bakery','#fff3e0','#e6d3a3',null,['cake','cupcake','donut','cookie']], ['Kitchen','#fff8ec','#e6d3a3',null,['stove','fridge','shelf']] ]],
+  ]},
+  spooky:{ icon:'👻', label:'Haunted House', floors:[
+    ['👻 Haunted','👻',[ ['Spooky Hall','#3a2e4d','#4a3a2a',null,['ghost','candle','tombstone']], ['Lab','#2a3340','#3a3a3a',null,['pumpkin','candle','ghost']] ]],
+    ['🎃 Graveyard','🎃',[ ['Graveyard','#2a3a3a','#3a4a3a',null,['tombstone','pumpkin','ghost']] ]],
+  ]},
+  farm:{ icon:'🚜', label:'Farm', floors:[
+    ['🚜 Farm','🚜',[ ['Barn','#ffe7d6','#caa66a',null,['cow','pig','chicken','horse','hay']], ['Field','#eaffd6','#8ad97a',null,['tractor','fence','sun','hay']] ]],
+  ]},
+};
+const BUILD_ORDER = ['house','salon','hospital','school','mall','cafe','petshop','park','beach','icecream','bakery','spooky','farm'];
+
+//////////////////// BUILD ////////////////////
+function uid(){ return 'x'+Math.floor(performance.now()*1000%1e9)+Math.floor((window._n=(window._n||0)+1)); }
+function layout(keys){
+  const things=[]; const n=keys.length;
+  keys.forEach((k,i)=>{
+    const x = n<=1 ? 50 : 14 + 72*(i/(n-1));
+    things.push({ id:uid(), kind:'obj', icon:k, x, y:72+(i%2?7:0), scale:1 });
+  });
+  return things;
+}
+function buildPlace(type, name){
+  const tpl = BUILDINGS[type];
+  return { name: name || tpl.label, type, cur:{f:0,r:0},
+    floors: tpl.floors.map(([fname,emoji,rooms]) => ({ name:fname, emoji,
+      rooms: rooms.map(([rn,wall,floor,scene,items]) => ({
+        id:uid(), name:rn, wall, floor, scene:scene||null, things:layout(items||[]) }))
+    }))
+  };
+}
+let DB = load() || { places:[ buildPlace('house',"Lucy's House") ], cur:0 };
+let selected = null;
+
+//////////////////// HELPERS ////////////////////
+function place(){ return DB.places[DB.cur]; }
+function curFloor(){ return place().floors[place().cur.f]; }
+function curRoom(){ return curFloor().rooms[place().cur.r]; }
+function save(){ try{ localStorage.setItem('lucyToca', JSON.stringify(DB)); }catch(e){} }
+function load(){ try{ return JSON.parse(localStorage.getItem('lucyToca')); }catch(e){ return null; } }
+function findThing(id){ return curRoom().things.find(t=>t.id===id); }
+function escapeHtml(s){ return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function escapeAttr(s){ return (s||'').replace(/"/g,'&quot;'); }
+function pick(a){ return a[Math.floor((performance.now()*7 + a.length*3) % a.length)]; }
+
+//////////////////// RENDER ////////////////////
+function renderAll(){ renderHeader(); renderFloors(); renderRooms(); renderStage(); renderCats(); }
+function renderHeader(){ document.getElementById('houseTitle').textContent =
+  (BUILDINGS[place().type]?.icon||'🏡') + ' ' + place().name; }
+function renderFloors(){
+  const el=document.getElementById('floors'); el.innerHTML='';
+  place().floors.forEach((f,i)=>{
+    const b=document.createElement('button');
+    b.className='floor-btn'+(i===place().cur.f?' active':'');
+    b.textContent=f.emoji+' '+f.name;
+    b.onclick=()=>{ place().cur={f:i,r:0}; selected=null; renderAll(); save(); };
+    el.appendChild(b);
+  });
+}
+function renderRooms(){
+  const el=document.getElementById('rooms'); el.innerHTML='';
+  curFloor().rooms.forEach((r,i)=>{
+    const b=document.createElement('button');
+    b.className='room-tab'+(i===place().cur.r?' active':'');
+    b.textContent=r.name;
+    b.onclick=()=>{ place().cur.r=i; selected=null; renderAll(); save(); };
+    el.appendChild(b);
+  });
+  const add=document.createElement('button');
+  add.className='room-tab add'; add.textContent='＋ Room'; add.onclick=addRoom;
+  el.appendChild(add);
+}
+function renderStage(){
+  const r=curRoom();
+  document.getElementById('wall').style.background=r.wall;
+  document.getElementById('floorEl').style.background=r.floor;
+  document.getElementById('scene').innerHTML=sceneSVG(r.scene);
+  document.querySelectorAll('.thing').forEach(n=>n.remove());
+  const stage=document.getElementById('stage');
+  r.things.forEach(t=>stage.appendChild(makeThing(t)));
+  renderActionBar();
+}
+function makeThing(t){
+  const el=document.createElement('div');
+  el.className='thing'+(t.id===selected?' selected':'');
+  el.style.left=t.x+'%'; el.style.top=t.y+'%'; el.dataset.id=t.id;
+  const sc=t.scale||1;
+  if(t.kind==='person'){
+    let html=''; if(t.say) html+=`<div class="bubble">${escapeHtml(t.say)}</div>`;
+    html+=personSVG(t); el.innerHTML=html;
+  } else {
+    const px=66*sc;
+    el.innerHTML=`<div class="art" style="width:${px}px;height:${px}px">${iconSvg(t.icon)}</div>`;
+  }
+  attachDrag(el,t);
+  return el;
+}
+
+//////////////////// CHARACTER ART ////////////////////
+function personSVG(c){
+  const h=86*(c.scale||1), w=h*0.66;
+  const hc=c.hair, sk=c.skin, cl=c.clothes;
+  const style=c.hairStyle||'short', hat=c.hat||'none', gl=c.glasses||'none', outfit=c.outfit||'shirt';
+  let back='';
+  if(style==='long') back=`<path d="M14 24 Q9 48 16 58 L22 58 Q19 34 21 23 Z" fill="${hc}"/><path d="M46 24 Q51 48 44 58 L38 58 Q41 34 39 23 Z" fill="${hc}"/>`;
+  else if(style==='ponytail') back=`<rect x="44" y="20" width="4" height="3" fill="#ff5a5a"/><circle cx="50" cy="24" r="7" fill="${hc}"/>`;
+  else if(style==='pigtails') back=`<circle cx="13" cy="27" r="6" fill="${hc}"/><circle cx="47" cy="27" r="6" fill="${hc}"/>`;
+  else if(style==='bun') back=`<circle cx="30" cy="5" r="6" fill="${hc}"/>`;
+  let front='';
+  const cap=`<path d="M15 25 Q15 6 30 6 Q45 6 45 25 Q41 14 30 14 Q19 14 15 25" fill="${hc}"/>`;
+  if(['short','long','ponytail','pigtails','bun'].includes(style)) front=cap;
+  else if(style==='curly') front=`<g fill="${hc}"><circle cx="18" cy="14" r="6"/><circle cx="26" cy="9" r="7"/><circle cx="34" cy="9" r="7"/><circle cx="42" cy="14" r="6"/><circle cx="16" cy="21" r="5"/><circle cx="44" cy="21" r="5"/></g>`;
+  else if(style==='spiky') front=`<path d="M15 23 L18 5 L23 18 L27 3 L31 18 L35 3 L39 18 L43 6 L45 23 Z" fill="${hc}"/>`;
+  let body;
+  if(outfit==='dress'){
+    body=`<rect x="11" y="40" width="6" height="18" rx="3" fill="${cl}"/><rect x="43" y="40" width="6" height="18" rx="3" fill="${cl}"/><rect x="25" y="58" width="4" height="20" rx="2" fill="${sk}"/><rect x="31" y="58" width="4" height="20" rx="2" fill="${sk}"/><path d="M19 38 Q19 35 30 35 Q41 35 41 38 L48 64 Q30 70 12 64 Z" fill="${cl}"/>`;
+  } else {
+    body=`<rect x="22" y="56" width="6" height="26" rx="3" fill="#5b4a6b"/><rect x="32" y="56" width="6" height="26" rx="3" fill="#5b4a6b"/><rect x="18" y="38" width="24" height="26" rx="11" fill="${cl}"/><rect x="11" y="40" width="6" height="20" rx="3" fill="${cl}"/><rect x="43" y="40" width="6" height="20" rx="3" fill="${cl}"/>`;
+  }
+  let glass='';
+  if(gl==='round') glass=`<g fill="none" stroke="#333" stroke-width="1.4"><circle cx="25" cy="25" r="4"/><circle cx="35" cy="25" r="4"/><line x1="29" y1="25" x2="31" y2="25"/></g>`;
+  else if(gl==='sun') glass=`<g fill="#333"><rect x="20" y="22" width="9" height="6" rx="2.5"/><rect x="31" y="22" width="9" height="6" rx="2.5"/><line x1="29" y1="24" x2="31" y2="24" stroke="#333" stroke-width="1.2"/></g>`;
+  const eye = gl==='sun' ? '' : `<circle cx="25" cy="25" r="2" fill="#222"/><circle cx="35" cy="25" r="2" fill="#222"/>`;
+  let hatSvg='';
+  if(hat==='party') hatSvg=`<path d="M22 4 L30 -11 L38 4 Z" fill="#ff6f9c"/><circle cx="30" cy="-11" r="2.6" fill="#ffd966"/><circle cx="27" cy="-1" r="1.4" fill="#fff"/><circle cx="32" cy="-5" r="1.4" fill="#fff"/>`;
+  else if(hat==='crown') hatSvg=`<path d="M19 8 L19 -1 L25 5 L30 -3 L35 5 L41 -1 L41 8 Z" fill="#ffd54a" stroke="#e0a92e" stroke-width="1"/><circle cx="30" cy="-1" r="1.5" fill="#ff5a5a"/>`;
+  else if(hat==='cap') hatSvg=`<path d="M15 11 Q30 -3 45 11 Z" fill="#6fc4ff"/><path d="M13 11 Q21 9 30 11 L30 14 Q19 14 13 13 Z" fill="#3a9fe0"/>`;
+  else if(hat==='bow') hatSvg=`<path d="M27 5 L20 1 L20 11 L27 7 Z" fill="#ff6f9c"/><path d="M33 5 L40 1 L40 11 L33 7 Z" fill="#ff6f9c"/><circle cx="30" cy="6" r="2.6" fill="#ff4f8c"/>`;
+  else if(hat==='beanie') hatSvg=`<path d="M14 16 Q14 -1 30 -1 Q46 -1 46 16 Z" fill="#c69bff"/><rect x="13" y="13" width="34" height="5" rx="2.5" fill="#a87fe0"/>`;
+  return `<svg class="emoji" viewBox="0 -13 60 100" width="${w}" height="${h}" style="overflow:visible">
+    <ellipse cx="30" cy="84" rx="15" ry="4" fill="rgba(0,0,0,.12)"/>${body}${back}
+    <circle cx="30" cy="25" r="14" fill="${sk}"/>${front}${eye}
+    <path d="M25 30 Q30 35 35 30" stroke="#222" stroke-width="1.6" fill="none" stroke-linecap="round"/>${glass}${hatSvg}</svg>`;
+}
+
+function sceneSVG(kind){
+  if(kind==='pool') return `<svg viewBox="0 0 100 100" preserveAspectRatio="none" width="100%" height="100%">
+    <rect x="8" y="58" width="84" height="34" rx="6" fill="#3aa0e8"/><rect x="8" y="58" width="84" height="34" rx="6" fill="none" stroke="#2b7fc0" stroke-width="1.5"/>
+    <path d="M12 64 q10 4 20 0 t20 0 t20 0 t16 0" stroke="#bfe6ff" stroke-width="1.4" fill="none" opacity=".8"/>
+    <path d="M12 74 q10 4 20 0 t20 0 t20 0 t16 0" stroke="#bfe6ff" stroke-width="1.4" fill="none" opacity=".8"/>
+    <path d="M74 18 C90 22 90 46 70 52" stroke="#ffd24d" stroke-width="7" fill="none" stroke-linecap="round"/>
+    <path d="M74 18 C90 22 90 46 70 52" stroke="#ff7eb0" stroke-width="3" fill="none" stroke-linecap="round" stroke-dasharray="2 4"/>
+    <rect x="71" y="14" width="6" height="20" fill="#cfa23a"/><line x1="73" y1="34" x2="73" y2="60" stroke="#9c7a2a" stroke-width="2"/></svg>`;
+  if(kind==='volley') return `<svg viewBox="0 0 100 100" preserveAspectRatio="none" width="100%" height="100%">
+    <line x1="50" y1="20" x2="50" y2="70" stroke="#fff" stroke-width="2"/><rect x="49" y="20" width="2" height="6" fill="#444"/>
+    <g stroke="#fff" stroke-width="1" opacity=".9"><line x1="30" y1="22" x2="30" y2="34"/><line x1="40" y1="22" x2="40" y2="34"/><line x1="60" y1="22" x2="60" y2="34"/><line x1="70" y1="22" x2="70" y2="34"/><line x1="24" y1="26" x2="76" y2="26"/><line x1="24" y1="30" x2="76" y2="30"/></g>
+    <line x1="10" y1="92" x2="90" y2="92" stroke="#fff" stroke-width="2" opacity=".7"/></svg>`;
+  return '';
+}
+
+//////////////////// DRAG ////////////////////
+function attachDrag(el,t){
+  let dragging=false, moved=false;
+  el.addEventListener('pointerdown', e=>{ e.preventDefault(); dragging=true; moved=false;
+    el.setPointerCapture(e.pointerId); el.classList.add('lift'); el.style.cursor='grabbing'; });
+  el.addEventListener('pointermove', e=>{
+    if(!dragging) return;
+    const st=document.getElementById('stage').getBoundingClientRect();
+    const nx=((e.clientX-st.left)/st.width)*100, ny=((e.clientY-st.top)/st.height)*100;
+    if(Math.abs(nx-t.x)>0.6||Math.abs(ny-t.y)>0.6) moved=true;
+    t.x=Math.max(3,Math.min(97,nx)); t.y=Math.max(6,Math.min(96,ny));
+    el.style.left=t.x+'%'; el.style.top=t.y+'%';
+  });
+  el.addEventListener('pointerup', ()=>{ dragging=false; el.classList.remove('lift'); el.style.cursor='grab';
+    if(!moved) selectThing(t.id); save(); });
+}
+
+//////////////////// SELECT + ACTIONS ////////////////////
+function selectThing(id){
+  selected=(selected===id)?null:id;
+  document.querySelectorAll('.thing').forEach(n=>n.classList.toggle('selected', n.dataset.id===selected));
+  renderActionBar();
+}
+function renderActionBar(){
+  const bar=document.getElementById('actionbar');
+  const t=selected&&findThing(selected);
+  if(!t){ bar.className=''; bar.innerHTML=''; return; }
+  bar.className='show';
+  let html='';
+  if(t.kind==='person'){ html+=abtn('👗 Dress Up','dress'); html+=abtn('💬 Talk','talk'); }
+  html+=abtn('➕ Bigger','big')+abtn('➖ Smaller','small')+abtn('🗑️ Remove','del',true);
+  bar.innerHTML=html;
+  bar.querySelectorAll('button').forEach(b=>b.onclick=()=>action(b.dataset.act,t));
+}
+function abtn(label,act,del){ return `<button class="abtn${del?' del':''}" data-act="${act}">${label}</button>`; }
+function action(act,t){
+  if(act==='big') t.scale=Math.min(2.6,(t.scale||1)+0.2);
+  else if(act==='small') t.scale=Math.max(0.5,(t.scale||1)-0.2);
+  else if(act==='del'){ curRoom().things=curRoom().things.filter(x=>x.id!==t.id); selected=null; }
+  else if(act==='dress'){ openDress(t); return; }
+  else if(act==='talk'){ openTalk(t); return; }
+  renderStage(); save();
+}
+
+//////////////////// DRAWER ////////////////////
+let curCat='🛋️ Furniture';
+function renderCats(){
+  const el=document.getElementById('cats'); el.innerHTML='';
+  el.appendChild(makeCat('👧 People'));
+  Object.keys(CATS).forEach(c=>el.appendChild(makeCat(c)));
+  renderItems();
+}
+function makeCat(name){
+  const b=document.createElement('button');
+  b.className='cat'+(curCat===name?' active':''); b.textContent=name;
+  b.onclick=()=>{ curCat=name; renderCats(); }; return b;
+}
+function renderItems(){
+  const el=document.getElementById('items'); el.innerHTML='';
+  if(curCat==='👧 People'){
+    const add=document.createElement('div'); add.className='item add-person'; add.textContent='＋ Add Person';
+    add.onclick=addPerson; el.appendChild(add); return;
+  }
+  (CATS[curCat]||[]).forEach(key=>{
+    const d=document.createElement('div'); d.className='item';
+    d.innerHTML=`<div class="art">${iconSvg(key)}</div>`;
+    d.onclick=()=>addThing(key); el.appendChild(d);
+  });
+}
+function addThing(key){
+  const t={ id:uid(), kind:'obj', icon:key, x:50, y:55, scale:1 };
+  curRoom().things.push(t); selected=t.id; renderStage(); save();
+}
+function addPerson(){
+  const t={ id:uid(), kind:'person', x:45, y:68, scale:1, skin:pick(SKINS), hair:pick(HAIRS),
+    clothes:pick(CLOTHES), hairStyle:pick(HAIRSTYLES.filter(s=>s!=='bald')), hat:'none',
+    glasses:'none', outfit:pick(OUTFITS), say:'' };
+  curRoom().things.push(t); selected=t.id; renderStage(); save();
+}
+
+//////////////////// ROOM DESIGN ////////////////////
+function addRoom(){
+  const r={ id:uid(), name:'New Room', wall:pick(PAINTS), floor:'#d9b38c', scene:null, things:[] };
+  curFloor().rooms.push(r); place().cur.r=curFloor().rooms.length-1; selected=null; renderAll(); save();
+}
+
+//////////////////// SHEET ////////////////////
+function openSheet(html){ document.getElementById('sheet').innerHTML=html; document.getElementById('overlay').className='show'; }
+function closeSheet(){ document.getElementById('overlay').className=''; }
+document.getElementById('overlay').onclick=e=>{ if(e.target.id==='overlay') closeSheet(); };
+function swatchRow(label,colors,current,attr){
+  let s=`<div class="row"><label>${label}</label><div class="swatches">`;
+  colors.forEach(c=>s+=`<div class="sw${c===current?' sel':''}" style="background:${c}" data-attr="${attr}" data-val="${c}"></div>`);
+  return s+'</div></div>';
+}
+function optRow(label,options,current,attr){
+  let s=`<div class="row"><label>${label}</label><div class="opts">`;
+  options.forEach(o=>s+=`<button class="opt${o.val===current?' sel':''}" data-attr="${attr}" data-val="${o.val}">${o.label}</button>`);
+  return s+'</div></div>';
+}
+
+document.getElementById('btnEdit').onclick=()=>{
+  const r=curRoom();
+  openSheet(`<h2>🎨 Design this room</h2>
+    <div class="row"><label>Room name</label><input type="text" id="rname" value="${escapeAttr(r.name)}"></div>
+    ${swatchRow('Wall color',PAINTS,r.wall,'wall')}${swatchRow('Floor color',FLOORS_C,r.floor,'floor')}
+    <button class="big" id="saveRoom">✅ Done</button><button class="big ghost" id="delRoom">🗑️ Delete this room</button>
+    <div class="hint">Tip: tap a color circle to paint!</div>`);
+  document.querySelectorAll('.sw').forEach(sw=>sw.onclick=()=>{
+    r[sw.dataset.attr]=sw.dataset.val;
+    document.querySelectorAll(`.sw[data-attr="${sw.dataset.attr}"]`).forEach(x=>x.classList.remove('sel'));
+    sw.classList.add('sel'); renderStage(); save();
+  });
+  document.getElementById('rname').oninput=e=>{ r.name=e.target.value||'Room'; renderRooms(); save(); };
+  document.getElementById('saveRoom').onclick=()=>{ save(); closeSheet(); };
+  document.getElementById('delRoom').onclick=()=>{
+    if(curFloor().rooms.length<=1){ alert('Each floor needs at least one room! Add another first. 😊'); return; }
+    curFloor().rooms.splice(place().cur.r,1); place().cur.r=0; closeSheet(); renderAll(); save();
+  };
+};
+
+function openDress(t){
+  openSheet(`<h2>👗 Dress-up Closet</h2>
+    <div style="text-align:center;margin:-4px 0 8px">${personSVG({...t,scale:1.5})}</div>
+    ${optRow('Hairstyle',HAIRSTYLES.map(v=>({val:v,label:cap(v)})),t.hairStyle||'short','hairStyle')}
+    ${swatchRow('Hair color',HAIRS,t.hair,'hair')}
+    ${optRow('Hat / Crown',HATS.map(v=>({val:v,label:hatLabel(v)})),t.hat||'none','hat')}
+    ${optRow('Glasses',GLASSES.map(v=>({val:v,label:glLabel(v)})),t.glasses||'none','glasses')}
+    ${optRow('Outfit',OUTFITS.map(v=>({val:v,label:v==='dress'?'👗 Dress':'👕 Shirt'})),t.outfit||'shirt','outfit')}
+    ${swatchRow('Clothes color',CLOTHES,t.clothes,'clothes')}${swatchRow('Skin',SKINS,t.skin,'skin')}
+    <button class="big" id="doneDress">✅ Looks great!</button>`);
+  const refresh=()=>{ openDress(t); renderStage(); save(); };
+  document.querySelectorAll('.sw').forEach(sw=>sw.onclick=()=>{ t[sw.dataset.attr]=sw.dataset.val; refresh(); });
+  document.querySelectorAll('.opt').forEach(op=>op.onclick=()=>{ t[op.dataset.attr]=op.dataset.val; refresh(); });
+  document.getElementById('doneDress').onclick=()=>{ save(); closeSheet(); };
+}
+function cap(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
+function hatLabel(v){ return {none:'None',party:'🥳 Party',crown:'👑 Crown',cap:'🧢 Cap',bow:'🎀 Bow',beanie:'🧶 Beanie'}[v]; }
+function glLabel(v){ return {none:'None',round:'👓 Round',sun:'🕶️ Sun'}[v]; }
+
+function openTalk(t){
+  openSheet(`<h2>💬 What do they say?</h2>
+    <div class="row"><input type="text" id="sayText" maxlength="40" value="${escapeAttr(t.say)}" placeholder="Type something fun..."></div>
+    <button class="big" id="saySave">💬 Say it!</button><button class="big ghost" id="sayClear">🤐 No bubble</button>`);
+  const inp=document.getElementById('sayText'); inp.focus();
+  document.getElementById('saySave').onclick=()=>{ t.say=inp.value; renderStage(); save(); closeSheet(); };
+  document.getElementById('sayClear').onclick=()=>{ t.say=''; renderStage(); save(); closeSheet(); };
+}
+
+//////////////////// PLACES ////////////////////
+document.getElementById('btnHouses').onclick=openPlaces;
+function openPlaces(){
+  let mine=DB.places.map((p,i)=>`<div class="placecard${i===DB.cur?' active':''}" data-go="${i}"><span class="ic">${BUILDINGS[p.type]?.icon||'🏠'}</span>${escapeHtml(p.name)}</div>`).join('');
+  let all=BUILD_ORDER.map(type=>`<div class="placecard" data-new="${type}"><span class="ic">${BUILDINGS[type].icon}</span>${BUILDINGS[type].label}</div>`).join('');
+  openSheet(`<h2>🗺️ Your Places</h2><div class="placegrid">${mine}</div>
+    <label style="font-weight:bold">➕ Add a new place</label>
+    <div class="placegrid" style="margin-top:8px">${all}</div>
+    <button class="big ghost" id="renameP">✏️ Rename this place</button>
+    ${DB.places.length>1?'<button class="big ghost" id="delP">🗑️ Remove this place</button>':''}`);
+  document.querySelectorAll('[data-go]').forEach(c=>c.onclick=()=>{ DB.cur=+c.dataset.go; selected=null; closeSheet(); renderAll(); save(); });
+  document.querySelectorAll('[data-new]').forEach(c=>c.onclick=()=>{ DB.places.push(buildPlace(c.dataset.new)); DB.cur=DB.places.length-1; selected=null; closeSheet(); renderAll(); save(); });
+  document.getElementById('renameP').onclick=()=>{ const n=prompt('Rename this place:',place().name); if(n){ place().name=n; closeSheet(); renderAll(); save(); } };
+  const del=document.getElementById('delP');
+  if(del) del.onclick=()=>{ if(!confirm('Remove this place?')) return; DB.places.splice(DB.cur,1); DB.cur=0; selected=null; closeSheet(); renderAll(); save(); };
+}
+
+renderAll();
+</script>
+</body>
+</html>
