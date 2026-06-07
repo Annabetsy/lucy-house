@@ -119,6 +119,14 @@
   .placecard .ic { font-size:30px; display:block; margin-bottom:4px; }
   .placecard.active { border-color:var(--pink2); background:#fff0f6; }
   .hint { font-size:12px; color:#998; text-align:center; padding:2px 0 0; }
+  .thing.eat { animation:nom .26s ease; }
+  @keyframes nom { 0%{transform:translate(-50%,-50%) rotate(0) scale(1)} 30%{transform:translate(-50%,-54%) rotate(-9deg) scale(1.12)} 60%{transform:translate(-50%,-50%) rotate(7deg) scale(.94)} 100%{transform:translate(-50%,-50%) rotate(0) scale(1)} }
+  .thing.hop { animation:hop .42s ease; }
+  @keyframes hop { 0%{transform:translate(-50%,-50%)} 40%{transform:translate(-50%,-68%)} 70%{transform:translate(-50%,-46%)} 100%{transform:translate(-50%,-50%)} }
+  .crumb { position:absolute; width:8px; height:8px; border-radius:50%; pointer-events:none; z-index:36; animation:crumbfly .6s ease-out forwards; }
+  @keyframes crumbfly { from{opacity:1; transform:translate(-50%,-50%)} to{opacity:0; transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(.3)} }
+  .poof { position:absolute; font-size:28px; pointer-events:none; z-index:37; transform:translate(-50%,-50%); animation:poofup .7s ease-out forwards; }
+  @keyframes poofup { from{opacity:1; transform:translate(-50%,-50%) scale(.5)} to{opacity:0; transform:translate(-50%,-130%) scale(1.5)} }
 </style>
 </head>
 <body>
@@ -157,6 +165,8 @@ const HAIRSTYLES = ['short','long','ponytail','bun','pigtails','curly','spiky','
 const HATS = ['none','party','crown','cap','bow','beanie'];
 const GLASSES = ['none','round','sun'];
 const OUTFITS = ['shirt','dress'];
+const FOOD = new Set(['cake','cupcake','apple','pizza','icecream','donut','cookie','juice','coffee','burger']);
+const FACES = ['happy','silly','sleepy','surprised','sad'];
 
 //////////////////// FLAT-ART ICON LIBRARY ////////////////////
 // every icon is an SVG string, viewBox 0 0 100 100, flat "Toca" style.
@@ -253,16 +263,28 @@ const ICONS = {
   hay:`<svg viewBox="0 0 100 100"><ellipse cx="50" cy="58" rx="30" ry="26" fill="#e8c469"/><ellipse cx="50" cy="58" rx="22" ry="26" fill="#d9b34a"/><line x1="30" y1="44" x2="34" y2="74" stroke="#c79a36" stroke-width="2"/><line x1="50" y1="34" x2="50" y2="82" stroke="#c79a36" stroke-width="2"/><line x1="70" y1="44" x2="66" y2="74" stroke="#c79a36" stroke-width="2"/></svg>`,
   fence:`<svg viewBox="0 0 100 100"><g fill="#f0e6d2" stroke="#cdb48a" stroke-width="1.5"><path d="M22 44 h10 v40 h-10 Z"/><path d="M46 44 h10 v40 h-10 Z"/><path d="M70 44 h10 v40 h-10 Z"/><rect x="18" y="54" width="66" height="7"/><rect x="18" y="68" width="66" height="7"/></g></svg>`,
   tractor:`<svg viewBox="0 0 100 100"><rect x="34" y="44" width="30" height="20" rx="4" fill="#5fae63"/><rect x="40" y="34" width="18" height="14" rx="3" fill="#7fcf82"/><rect x="42" y="36" width="14" height="9" fill="#bfe6ff"/><rect x="60" y="50" width="10" height="6" fill="#4a9a4f"/><circle cx="40" cy="74" r="10" fill="#3a3a44"/><circle cx="40" cy="74" r="4" fill="#9aa6ad"/><circle cx="70" cy="72" r="14" fill="#3a3a44"/><circle cx="70" cy="72" r="6" fill="#9aa6ad"/></svg>`,
+  car:`<svg viewBox="0 0 100 100"><rect x="16" y="50" width="68" height="20" rx="10" fill="#6fc4ff"/><path d="M30 50 Q38 34 54 34 L70 50 Z" fill="#8fd4ff"/><rect x="40" y="40" width="12" height="10" rx="2" fill="#dff2ff"/><rect x="55" y="40" width="11" height="10" rx="2" fill="#dff2ff"/><circle cx="32" cy="72" r="9" fill="#3a3a44"/><circle cx="68" cy="72" r="9" fill="#3a3a44"/><circle cx="32" cy="72" r="3.5" fill="#cfd8dd"/><circle cx="68" cy="72" r="3.5" fill="#cfd8dd"/><circle cx="20" cy="58" r="3" fill="#ffd34d"/></svg>`,
+  bus:`<svg viewBox="0 0 100 100"><rect x="14" y="36" width="72" height="34" rx="8" fill="#ffcf3a"/><rect x="20" y="42" width="12" height="12" rx="2" fill="#dff2ff"/><rect x="36" y="42" width="12" height="12" rx="2" fill="#dff2ff"/><rect x="52" y="42" width="12" height="12" rx="2" fill="#dff2ff"/><rect x="68" y="42" width="12" height="12" rx="2" fill="#dff2ff"/><rect x="14" y="60" width="72" height="6" fill="#e0a92e"/><circle cx="32" cy="72" r="9" fill="#3a3a44"/><circle cx="68" cy="72" r="9" fill="#3a3a44"/><circle cx="32" cy="72" r="3.5" fill="#cfd8dd"/><circle cx="68" cy="72" r="3.5" fill="#cfd8dd"/></svg>`,
+  desk:`<svg viewBox="0 0 100 100"><path d="M24 44 L70 40 L72 48 L26 52 Z" fill="#e0a96a"/><rect x="28" y="52" width="6" height="34" fill="#b6823f"/><rect x="62" y="50" width="6" height="36" fill="#b6823f"/><rect x="40" y="56" width="26" height="14" rx="2" fill="#caa06a"/><circle cx="34" cy="44" r="3" fill="#ff7fa0"/></svg>`,
+  counter:`<svg viewBox="0 0 100 100"><rect x="20" y="44" width="60" height="8" rx="3" fill="#cfd8dd"/><rect x="22" y="52" width="56" height="34" rx="3" fill="#e8c79a"/><line x1="50" y1="52" x2="50" y2="86" stroke="#caa06a" stroke-width="2"/><rect x="34" y="62" width="4" height="8" rx="2" fill="#9aa6ad"/><rect x="62" y="62" width="4" height="8" rx="2" fill="#9aa6ad"/></svg>`,
+  bench:`<svg viewBox="0 0 100 100"><rect x="22" y="48" width="56" height="8" rx="3" fill="#c98a52"/><rect x="22" y="58" width="56" height="8" rx="3" fill="#c98a52"/><rect x="26" y="66" width="6" height="20" fill="#9a6b3f"/><rect x="68" y="66" width="6" height="20" fill="#9a6b3f"/><rect x="24" y="40" width="6" height="18" fill="#9a6b3f"/><rect x="70" y="40" width="6" height="18" fill="#9a6b3f"/></svg>`,
+  swingset:`<svg viewBox="0 0 100 100"><path d="M16 84 L28 30 M44 84 L30 30" stroke="#9a6b3f" stroke-width="4" fill="none"/><path d="M84 84 L72 30 M56 84 L70 30" stroke="#9a6b3f" stroke-width="4" fill="none"/><line x1="28" y1="30" x2="72" y2="30" stroke="#9a6b3f" stroke-width="4"/><line x1="38" y1="30" x2="38" y2="60" stroke="#888" stroke-width="2"/><line x1="46" y1="30" x2="46" y2="60" stroke="#888" stroke-width="2"/><rect x="36" y="60" width="12" height="5" rx="2" fill="#ff7fa0"/><line x1="56" y1="30" x2="56" y2="60" stroke="#888" stroke-width="2"/><line x1="64" y1="30" x2="64" y2="60" stroke="#888" stroke-width="2"/><rect x="54" y="60" width="12" height="5" rx="2" fill="#7ac6ff"/></svg>`,
+  trampoline:`<svg viewBox="0 0 100 100"><ellipse cx="50" cy="54" rx="34" ry="12" fill="#7ac6ff"/><ellipse cx="50" cy="51" rx="34" ry="12" fill="#3a3a44"/><ellipse cx="50" cy="49" rx="28" ry="9" fill="#5560a0"/><line x1="22" y1="55" x2="26" y2="80" stroke="#9aa6ad" stroke-width="3"/><line x1="78" y1="55" x2="74" y2="80" stroke="#9aa6ad" stroke-width="3"/></svg>`,
+  mailbox:`<svg viewBox="0 0 100 100"><rect x="46" y="50" width="6" height="36" fill="#9a6b3f"/><path d="M34 44 h26 a8 8 0 0 1 8 8 v10 h-34 Z" fill="#ff7fa0"/><rect x="34" y="52" width="34" height="10" fill="#ff9ebf"/><rect x="62" y="46" width="4" height="12" fill="#ff5a5a"/></svg>`,
+  lamppost:`<svg viewBox="0 0 100 100"><rect x="47" y="40" width="6" height="46" fill="#5b6b78"/><rect x="40" y="84" width="20" height="5" rx="2" fill="#5b6b78"/><path d="M40 34 h20 l-3 10 h-14 Z" fill="#ffd966"/><rect x="44" y="30" width="12" height="5" rx="2" fill="#5b6b78"/></svg>`,
+  microwave:`<svg viewBox="0 0 100 100"><rect x="22" y="40" width="56" height="34" rx="5" fill="#dfe6ea"/><rect x="28" y="46" width="32" height="22" rx="3" fill="#3a4450"/><rect x="64" y="46" width="10" height="10" rx="2" fill="#9aa6ad"/><circle cx="69" cy="62" r="3" fill="#9aa6ad"/></svg>`,
+  washingmachine:`<svg viewBox="0 0 100 100"><rect x="26" y="32" width="48" height="54" rx="6" fill="#eef3f6"/><circle cx="50" cy="60" r="16" fill="#cfe0ea"/><circle cx="50" cy="60" r="10" fill="#bfe6ff"/><rect x="32" y="38" width="8" height="6" rx="2" fill="#9aa6ad"/><circle cx="64" cy="41" r="3" fill="#ff7fa0"/></svg>`,
 };
 function iconSvg(key){ return ICONS[key] || ICONS._box; }
 
 //////////////////// DRAWER CATEGORIES ////////////////////
 const CATS = {
-  '🛋️ Furniture': ['sofa','armchair','chair','table','bed','crib','lamp','tv','shelf','books','rug','plant','window','door','fridge','stove','bathtub','toilet','sink','mirror','clock','picture','wardrobe','candle'],
+  '🛋️ Furniture': ['sofa','armchair','chair','table','bed','crib','lamp','tv','shelf','books','rug','plant','window','door','fridge','stove','counter','microwave','washingmachine','bathtub','toilet','sink','mirror','clock','picture','wardrobe','desk','candle'],
   '🍰 Food':       ['cake','cupcake','apple','pizza','icecream','donut','cookie','juice','coffee','burger'],
   '🐶 Animals':    ['dog','cat','rabbit','fishbowl','bird','hamster','cow','pig','chicken','horse'],
   '🌳 Nature':     ['tree','palm','flower','bush','sun','rock','hay','fence'],
-  '🧸 Toys':       ['teddy','ball','balloon','blocks','toycar','slide','swing','kite'],
+  '🧸 Toys':       ['teddy','ball','balloon','blocks','toycar','slide','swing','swingset','trampoline','kite'],
+  '🚗 Town':       ['car','bus','bench','lamppost','mailbox'],
   '🏖️ Beach':      ['poolring','beachball','umbrella','surfboard','bucket','starfish'],
   '✨ More':       ['register','shoppingbag','easel','salonchair','pill','ghost','pumpkin','tombstone','tractor'],
 };
@@ -272,7 +294,7 @@ const CATS = {
 const BUILDINGS = {
   house:{ icon:'🏡', label:'House', floors:[
     ['1 · Living','🛋️',[ ['Living Room','#fbe6ef','#d9b38c',null,['sofa','tv','plant','picture']], ['Family Room','#e7f0ff','#c9a06a',null,['armchair','clock','window','lamp']] ]],
-    ['2 · Kitchen','🍳',[ ['Kitchen','#fff6da','#e6d3a3',null,['fridge','stove','apple','shelf']], ['Dining Room','#ffe7e0','#d9b38c',null,['table','chair','chair','cake']] ]],
+    ['2 · Kitchen','🍳',[ ['Kitchen','#fff6da','#e6d3a3',null,['fridge','stove','counter','apple']], ['Dining Room','#ffe7e0','#d9b38c',null,['table','chair','chair','cake']] ]],
     ['3 · Bedrooms','🛏️',[ ["Lucy's Room",'#ffd6e6','#e7c9a0',null,['bed','teddy','picture','lamp']], ['Guest Room','#e9ffe7','#d9b38c',null,['bed','window','wardrobe']] ]],
     ['4 · Bathrooms','🛁',[ ['Big Bathroom','#d9f7ff','#cfe3ff',null,['bathtub','toilet','mirror']], ['Little Bathroom','#e7f0ff','#cfe3ff',null,['toilet','sink','mirror']] ]],
     ['5 · Playroom','🧸',[ ['Playroom','#f1e7ff','#e7c9a0',null,['teddy','blocks','toycar','ball']], ['Art Studio','#fff6da','#d9b38c',null,['easel','picture','shelf']] ]],
@@ -288,7 +310,7 @@ const BUILDINGS = {
     ['🚑 Emergency','🚑',[ ['Emergency','#fff0f0','#e6d3d3',null,['bed','pill','clock']] ]],
   ]},
   school:{ icon:'🏫', label:'School', floors:[
-    ['🏫 School','🏫',[ ['Classroom','#fff6da','#e6d3a3',null,['chair','books','easel','shelf']], ['Library','#f0e9ff','#d9b38c',null,['shelf','books','chair']] ]],
+    ['🏫 School','🏫',[ ['Classroom','#fff6da','#e6d3a3',null,['desk','books','easel','shelf']], ['Library','#f0e9ff','#d9b38c',null,['shelf','books','chair']] ]],
     ['🏀 Gym','🏀',[ ['Gym','#eaf4ff','#f0d79a',null,['ball','ball']], ['Cafeteria','#fff0e7','#e6d3a3',null,['pizza','juice','chair','table']] ]],
   ]},
   mall:{ icon:'🛍️', label:'Shopping Mall', floors:[
@@ -302,7 +324,7 @@ const BUILDINGS = {
     ['🐾 Pets','🐾',[ ['Pet Store','#eafff0','#e6d3a3',null,['dog','cat','rabbit','fishbowl']], ['Grooming','#e7f6ff','#cfe3ff',null,['bathtub','dog','hamster']] ]],
   ]},
   park:{ icon:'🛝', label:'Park', floors:[
-    ['🛝 Park','🛝',[ ['Playground','#cdeefc','#8ad97a',null,['slide','swing','ball','tree']], ['Picnic','#d9f2ff','#8ad97a',null,['tree','flower','bush']] ]],
+    ['🛝 Park','🛝',[ ['Playground','#cdeefc','#8ad97a',null,['slide','swingset','ball','bench']], ['Picnic','#d9f2ff','#8ad97a',null,['tree','flower','bush']] ]],
   ]},
   beach:{ icon:'🏖️', label:'Beach', floors:[
     ['🏖️ Beach','🏖️',[ ['Sandy Beach','#bfe9ff','#f3e0a8','pool',['umbrella','beachball','surfboard','bucket']], ['Snack Bar','#d9f2ff','#e6d3a3',null,['icecream','juice','palm']] ]],
@@ -433,7 +455,7 @@ function personSVG(c){
   let glass='';
   if(gl==='round') glass=`<g fill="none" stroke="#333" stroke-width="1.4"><circle cx="25" cy="25" r="4"/><circle cx="35" cy="25" r="4"/><line x1="29" y1="25" x2="31" y2="25"/></g>`;
   else if(gl==='sun') glass=`<g fill="#333"><rect x="20" y="22" width="9" height="6" rx="2.5"/><rect x="31" y="22" width="9" height="6" rx="2.5"/><line x1="29" y1="24" x2="31" y2="24" stroke="#333" stroke-width="1.2"/></g>`;
-  const eye = gl==='sun' ? '' : `<circle cx="25" cy="25" r="2" fill="#222"/><circle cx="35" cy="25" r="2" fill="#222"/>`;
+  const faceMarks = faceSVG(c.face||'happy', gl==='sun');
   let hatSvg='';
   if(hat==='party') hatSvg=`<path d="M22 4 L30 -11 L38 4 Z" fill="#ff6f9c"/><circle cx="30" cy="-11" r="2.6" fill="#ffd966"/><circle cx="27" cy="-1" r="1.4" fill="#fff"/><circle cx="32" cy="-5" r="1.4" fill="#fff"/>`;
   else if(hat==='crown') hatSvg=`<path d="M19 8 L19 -1 L25 5 L30 -3 L35 5 L41 -1 L41 8 Z" fill="#ffd54a" stroke="#e0a92e" stroke-width="1"/><circle cx="30" cy="-1" r="1.5" fill="#ff5a5a"/>`;
@@ -442,8 +464,17 @@ function personSVG(c){
   else if(hat==='beanie') hatSvg=`<path d="M14 16 Q14 -1 30 -1 Q46 -1 46 16 Z" fill="#c69bff"/><rect x="13" y="13" width="34" height="5" rx="2.5" fill="#a87fe0"/>`;
   return `<svg class="emoji" viewBox="0 -13 60 100" width="${w}" height="${h}" style="overflow:visible">
     <ellipse cx="30" cy="84" rx="15" ry="4" fill="rgba(0,0,0,.12)"/>${body}${back}
-    <circle cx="30" cy="25" r="14" fill="${sk}"/>${front}${eye}
-    <path d="M25 30 Q30 35 35 30" stroke="#222" stroke-width="1.6" fill="none" stroke-linecap="round"/>${glass}${hatSvg}</svg>`;
+    <circle cx="30" cy="25" r="14" fill="${sk}"/>${front}${faceMarks}${glass}${hatSvg}</svg>`;
+}
+function faceSVG(face, sun){
+  const E = sun ? '' : null; // sunglasses hide eyes
+  let eyes='', mouth='';
+  if(face==='sleepy'){ eyes=`<path d="M22 25 q3 3 6 0" stroke="#222" stroke-width="1.6" fill="none"/><path d="M32 25 q3 3 6 0" stroke="#222" stroke-width="1.6" fill="none"/>`; mouth=`<circle cx="30" cy="33" r="2" fill="#222"/>`; }
+  else if(face==='surprised'){ eyes=`<circle cx="25" cy="25" r="2.8" fill="#222"/><circle cx="35" cy="25" r="2.8" fill="#222"/>`; mouth=`<ellipse cx="30" cy="33" rx="3" ry="3.5" fill="#9a4a4a"/>`; }
+  else if(face==='sad'){ eyes=`<circle cx="25" cy="25" r="2" fill="#222"/><circle cx="35" cy="25" r="2" fill="#222"/><path d="M38 28 q2 4 0 8" stroke="#7ac6ff" stroke-width="2" fill="none" stroke-linecap="round"/>`; mouth=`<path d="M25 34 Q30 30 35 34" stroke="#222" stroke-width="1.6" fill="none" stroke-linecap="round"/>`; }
+  else if(face==='silly'){ eyes=`<path d="M22 26 q3 -4 6 0" stroke="#222" stroke-width="1.6" fill="none"/><circle cx="35" cy="25" r="2.2" fill="#222"/>`; mouth=`<path d="M24 30 Q30 36 36 30" stroke="#222" stroke-width="1.6" fill="none"/><path d="M28 32 q2 5 5 4" fill="#ff6f8c"/>`; }
+  else { eyes=`<circle cx="25" cy="25" r="2" fill="#222"/><circle cx="35" cy="25" r="2" fill="#222"/><circle cx="22" cy="29" r="2.2" fill="#ff9eb6" opacity=".55"/><circle cx="38" cy="29" r="2.2" fill="#ff9eb6" opacity=".55"/>`; mouth=`<path d="M25 30 Q30 35 35 30" stroke="#222" stroke-width="1.6" fill="none" stroke-linecap="round"/>`; }
+  return (sun ? '' : eyes) + mouth;
 }
 
 function sceneSVG(kind){
@@ -475,7 +506,50 @@ function attachDrag(el,t){
     el.style.left=t.x+'%'; el.style.top=t.y+'%';
   });
   el.addEventListener('pointerup', ()=>{ dragging=false; el.classList.remove('lift'); el.style.cursor='grab';
-    if(!moved) selectThing(t.id); save(); });
+    if(!moved) tapThing(t, el); save(); });
+}
+function tapThing(t, el){
+  if(t.kind==='obj' && FOOD.has(t.icon)){ biteFood(t, el); return; }
+  if(t.kind==='person'){
+    selected = t.id;
+    document.querySelectorAll('.thing').forEach(n=>n.classList.toggle('selected', n.dataset.id===selected));
+    cycleFace(t, el); renderActionBar(); return;
+  }
+  selectThing(t.id);
+}
+function refreshThing(t, el){
+  if(t.kind==='person'){ let html=''; if(t.say) html+=`<div class="bubble">${escapeHtml(t.say)}</div>`; html+=personSVG(t); el.innerHTML=html; }
+  else { const px=66*(t.scale||1); el.innerHTML=`<div class="art" style="width:${px}px;height:${px}px">${iconSvg(t.icon)}</div>`; }
+}
+function cycleFace(t, el){
+  const i=FACES.indexOf(t.face||'happy'); t.face=FACES[(i+1)%FACES.length];
+  refreshThing(t, el);
+  el.classList.remove('hop'); void el.offsetWidth; el.classList.add('hop'); save();
+}
+function biteFood(t, el){
+  t.bites = (t.bites==null ? 3 : t.bites) - 1;
+  crumbs(el);
+  el.classList.remove('eat'); void el.offsetWidth; el.classList.add('eat');
+  if(t.bites<=0){
+    poof(el);
+    setTimeout(()=>{ curRoom().things=curRoom().things.filter(x=>x.id!==t.id); if(selected===t.id) selected=null; renderStage(); save(); }, 200);
+  } else {
+    t.scale=Math.max(0.4,(t.scale||1)-0.22); refreshThing(t, el); save();
+  }
+}
+function crumbs(el){
+  const stage=document.getElementById('stage'), r=el.getBoundingClientRect(), sr=stage.getBoundingClientRect();
+  const cx=r.left-sr.left+r.width/2, cy=r.top-sr.top+r.height/2, cols=['#e0a96a','#ff9eb6','#ffd34d','#a05a2a'];
+  for(let i=0;i<6;i++){ const d=document.createElement('div'); d.className='crumb';
+    d.style.left=cx+'px'; d.style.top=cy+'px'; d.style.background=cols[i%cols.length];
+    const ang=Math.PI*2*(i/6); d.style.setProperty('--dx',Math.cos(ang)*36+'px'); d.style.setProperty('--dy',(Math.sin(ang)*26+24)+'px');
+    stage.appendChild(d); setTimeout(()=>d.remove(),620); }
+}
+function poof(el){
+  const stage=document.getElementById('stage'), r=el.getBoundingClientRect(), sr=stage.getBoundingClientRect();
+  const d=document.createElement('div'); d.className='poof'; d.textContent='✨';
+  d.style.left=(r.left-sr.left+r.width/2)+'px'; d.style.top=(r.top-sr.top+r.height/2)+'px';
+  stage.appendChild(d); setTimeout(()=>d.remove(),700);
 }
 
 //////////////////// SELECT + ACTIONS ////////////////////
@@ -490,7 +564,7 @@ function renderActionBar(){
   if(!t){ bar.className=''; bar.innerHTML=''; return; }
   bar.className='show';
   let html='';
-  if(t.kind==='person'){ html+=abtn('👗 Dress Up','dress'); html+=abtn('💬 Talk','talk'); }
+  if(t.kind==='person'){ html+=abtn('👗 Dress Up','dress'); html+=abtn('😊 Face','face'); html+=abtn('💬 Talk','talk'); }
   html+=abtn('➕ Bigger','big')+abtn('➖ Smaller','small')+abtn('🗑️ Remove','del',true);
   bar.innerHTML=html;
   bar.querySelectorAll('button').forEach(b=>b.onclick=()=>action(b.dataset.act,t));
@@ -501,6 +575,7 @@ function action(act,t){
   else if(act==='small') t.scale=Math.max(0.5,(t.scale||1)-0.2);
   else if(act==='del'){ curRoom().things=curRoom().things.filter(x=>x.id!==t.id); selected=null; }
   else if(act==='dress'){ openDress(t); return; }
+  else if(act==='face'){ openFaces(t); return; }
   else if(act==='talk'){ openTalk(t); return; }
   renderStage(); save();
 }
@@ -537,7 +612,7 @@ function addThing(key){
 function addPerson(){
   const t={ id:uid(), kind:'person', x:45, y:68, scale:1, skin:pick(SKINS), hair:pick(HAIRS),
     clothes:pick(CLOTHES), hairStyle:pick(HAIRSTYLES.filter(s=>s!=='bald')), hat:'none',
-    glasses:'none', outfit:pick(OUTFITS), say:'' };
+    glasses:'none', outfit:pick(OUTFITS), face:'happy', say:'' };
   curRoom().things.push(t); selected=t.id; renderStage(); save();
 }
 
@@ -597,6 +672,14 @@ function openDress(t){
   document.querySelectorAll('.opt').forEach(op=>op.onclick=()=>{ t[op.dataset.attr]=op.dataset.val; refresh(); });
   document.getElementById('doneDress').onclick=()=>{ save(); closeSheet(); };
 }
+function openFaces(t){
+  const opts=[['happy','😊 Happy'],['silly','😝 Silly'],['sleepy','😴 Sleepy'],['surprised','😮 Surprised'],['sad','🥲 Sad']];
+  openSheet(`<h2>😊 Pick a face</h2><div style="text-align:center;margin:-2px 0 10px">${personSVG({...t,scale:1.5})}</div>
+    <div class="opts">${opts.map(o=>`<button class="opt${(t.face||'happy')===o[0]?' sel':''}" data-f="${o[0]}">${o[1]}</button>`).join('')}</div>
+    <button class="big" id="faceDone">✅ Done</button>`);
+  document.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{ t.face=b.dataset.f; openFaces(t); renderStage(); save(); });
+  document.getElementById('faceDone').onclick=()=>{ save(); closeSheet(); };
+}
 function cap(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
 function hatLabel(v){ return {none:'None',party:'🥳 Party',crown:'👑 Crown',cap:'🧢 Cap',bow:'🎀 Bow',beanie:'🧶 Beanie'}[v]; }
 function glLabel(v){ return {none:'None',round:'👓 Round',sun:'🕶️ Sun'}[v]; }
@@ -627,6 +710,11 @@ function openPlaces(){
   if(del) del.onclick=()=>{ if(!confirm('Remove this place?')) return; DB.places.splice(DB.cur,1); DB.cur=0; selected=null; closeSheet(); renderAll(); save(); };
 }
 
+document.getElementById('stage').addEventListener('pointerdown', e=>{
+  if(['stage','wall','floorEl','baseboard','scene'].includes(e.target.id) && selected){
+    selected=null; document.querySelectorAll('.thing').forEach(n=>n.classList.remove('selected')); renderActionBar();
+  }
+});
 renderAll();
 </script>
 </body>
